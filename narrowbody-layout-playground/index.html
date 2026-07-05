@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrowbody Layout Playground</title>
+<style>
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    color: #222; background: #fff; line-height: 1.4;
+  }
+  .wrap { display: flex; justify-content: center; padding: 1.25rem 1rem; }
+  .col { width: 100%; max-width: 620px; }
+
+  label.top { font-size: 13px; color: #666; display: block; margin-bottom: 6px; }
+  select {
+    width: 100%; padding: 10px 12px; font-size: 15px; font-weight: 500;
+    border-radius: 8px; border: 0.5px solid #ccc; background: #fff; cursor: pointer; color: #222;
+    -webkit-appearance: menulist;
+  }
+
+  .block { margin-bottom: 1.25rem; }
+
+  /* summary cards — 4 across, reflow to 2 then 1 */
+  .cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px; margin-bottom: 1.25rem;
+  }
+  .metric { background: #f6f6f4; border-radius: 8px; padding: 12px 14px; min-width: 0; }
+  .metric .lbl { font-size: 12px; color: #888; margin: 0 0 2px; }
+  .metric .val { font-size: 24px; font-weight: 500; margin: 0; line-height: 1.2; }
+  .metric .sub { font-size: 11px; color: #aaa; margin: 2px 0 0; }
+
+  .panel { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+
+  .slider-group { margin-bottom: 1.1rem; }
+  .slider-group.last { margin-bottom: 0; }
+  .slider-head { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .slider-head .s-lbl { font-size: 13px; color: #666; }
+  .slider-head .s-val { font-size: 13px; font-weight: 500; }
+  input[type=range] { width: 100%; accent-color: #185FA5; margin: 0; }
+  .slider-hints { display: flex; justify-content: space-between; font-size: 11px; color: #bbb; margin-top: 3px; }
+
+  .panel .hdr { font-size: 13px; color: #888; margin: 0 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 6px 8px; }
+  td.name { font-weight: 500; }
+  td.dim { color: #888; }
+  td.num { text-align: right; font-weight: 500; }
+  tr.alt { background: #f9f9f7; }
+  tr.total td { border-top: 0.5px solid #ddd; padding: 8px; font-weight: 500; }
+  tr.total td.num { font-size: 15px; }
+
+  .cfg-sub { font-size: 11px; color: #bbb; margin: 0 0 12px; }
+  .cfg-list { display: flex; flex-direction: column; gap: 8px; }
+  .cfg-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #f9f9f7; border: 0.5px solid #e5e5e3; border-radius: 8px;
+    padding: 10px 12px; cursor: pointer; text-align: left; gap: 8px; width: 100%;
+    font-family: inherit;
+  }
+  .cfg-btn.active { background: #ddeaf8; border: 1.5px solid #185FA5; }
+  .cfg-left { flex: 1; min-width: 0; }
+  .cfg-a { font-weight: 500; font-size: 14px; color: #222; }
+  .cfg-c { font-size: 12px; color: #999; margin-left: 8px; }
+  .cfg-n { font-size: 11px; color: #aaa; margin: 2px 0 0; }
+  .cfg-right { text-align: right; white-space: nowrap; }
+  .cfg-t { font-size: 18px; font-weight: 500; color: #333; }
+  .cfg-seats { font-size: 11px; color: #aaa; display: block; }
+  .cfg-btn.active .cfg-a, .cfg-btn.active .cfg-c, .cfg-btn.active .cfg-n,
+  .cfg-btn.active .cfg-t, .cfg-btn.active .cfg-seats { color: #0C447C; }
+
+  .anchor { background: #f5f5f3; border-radius: 8px; padding: 10px 12px; font-size: 11px; color: #888; }
+  .warn { background: #fef3e2; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #7a4f00; margin-top: 0.75rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="col">
+
+    <div class="block">
+      <label class="top" for="acSelect">Aircraft type</label>
+      <select id="acSelect"></select>
+    </div>
+
+    <div class="cards" id="cards">
+      <div class="metric"><p class="lbl">Total seats</p><p class="val" id="m_total"></p><p class="sub" id="m_total_s"></p></div>
+      <div class="metric"><p class="lbl">Eco+ seats</p><p class="val" id="m_ep"></p><p class="sub" id="m_ep_s"></p></div>
+      <div class="metric"><p class="lbl">Eco seats</p><p class="val" id="m_ec"></p><p class="sub" id="m_ec_s"></p></div>
+      <div class="metric"><p class="lbl">Total rows</p><p class="val" id="m_rows"></p><p class="sub" id="m_rows_s"></p></div>
+    </div>
+
+    <div class="panel">
+      <div class="slider-group">
+        <div class="slider-head"><span class="s-lbl">Economy+ rows</span><span class="s-val" id="ep_rows_v"></span></div>
+        <input type="range" id="ep_rows" min="0" max="10" step="1">
+        <div class="slider-hints"><span>0 (none)</span><span>5</span><span>10</span></div>
+      </div>
+      <div class="slider-group">
+        <div class="slider-head"><span class="s-lbl">Economy+ pitch</span><span class="s-val" id="ep_pitch_v"></span></div>
+        <input type="range" id="ep_pitch" min="33" max="40" step="1">
+        <div class="slider-hints"><span>33"</span><span>36" (standard Stretch)</span><span>40"</span></div>
+      </div>
+      <div class="slider-group last">
+        <div class="slider-head"><span class="s-lbl">Economy pitch</span><span class="s-val" id="ec_pitch_v"></span></div>
+        <input type="range" id="ec_pitch" min="28" max="34" step="1">
+        <div class="slider-hints"><span>28" (ULCC)</span><span>30–31" (LCC)</span><span>34" (legacy)</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="hdr">Seat breakdown</p>
+      <table><tbody id="breakdown"></tbody></table>
+    </div>
+
+    <div class="panel">
+      <p class="hdr" style="margin-bottom:4px">Real-world configurations</p>
+      <p class="cfg-sub">Source: AeroLOPA — click any row to load approximate settings</p>
+      <div class="cfg-list" id="cfgList"></div>
+    </div>
+
+    <div class="anchor" id="anchor"></div>
+    <div class="warn" id="warn" style="display:none"></div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var AIRCRAFT = [
+    { id:"a321n", label:"A321neo ACF", mfr:"Airbus", spr:6, usable:1144, maxRows:41, exitLimit:244, def:[3,36,28],
+      anchor:"Frontier 240M / 41 rows · 3\u00d736\" + 37\u00d728\" = 1144\" \u2192 240 \u2713 (AeroLOPA: f9-32q)",
+      ex:[
+        {a:"Frontier",t:240,c:"240M",r:3,ep:36,ec:28,n:"3 Stretch + 37 std rows. Max density."},
+        {a:"EasyJet",t:235,c:"235M",r:0,ep:36,ec:28,n:"40 rows all-Y (AeroLOPA: u2-32q)."},
+        {a:"Spirit",t:235,c:"235M",r:2,ep:34,ec:28,n:"Go Big/Comfy rows + dense Y."},
+        {a:"American",t:196,c:"20F + 176M",r:6,ep:34,ec:30,n:"20 First + 35 MCE + 141 std Y (AeroLOPA: aa-a321nx)."},
+        {a:"United",t:200,c:"20F + 180M",r:9,ep:35,ec:30,n:"20 First + 57 E+ in 180M (AeroLOPA: ua-21n)."}
+      ]},
+    { id:"a321", label:"A321ceo", mfr:"Airbus", spr:6, usable:1092, maxRows:41, exitLimit:230, def:[0,33,28],
+      anchor:"Frontier 230M / 41 rows @ ~28.5\" avg = 1092\" (AeroLOPA: f9-321).",
+      ex:[
+        {a:"Frontier",t:230,c:"230M",r:0,ep:33,ec:28,n:"All-Y 41 rows at ~28\" avg pitch."},
+        {a:"American (Oasis)",t:190,c:"20F + 170M",r:5,ep:34,ec:30,n:"20 First + MCE + std Y (AeroLOPA: aa-a321k)."}
+      ]},
+    { id:"a32n", label:"A320neo", mfr:"Airbus", spr:6, usable:892, maxRows:31, exitLimit:194, def:[3,36,28],
+      anchor:"Frontier 186M / 31 rows · 3\u00d736\" + 28\u00d728\" = 892\" \u2192 186 \u2713 (AeroLOPA: f9-32n)",
+      ex:[
+        {a:"Frontier",t:186,c:"186M",r:3,ep:36,ec:28,n:"3 Stretch + 28 std rows. Perfect back-calc."},
+        {a:"Spirit",t:182,c:"182M",r:2,ep:34,ec:28,n:"Go Big/Comfy + dense Y (AeroLOPA: nk-32n)."},
+        {a:"EasyJet",t:186,c:"186M",r:0,ep:36,ec:29,n:"All-Y, no branded eco+ product."},
+        {a:"United",t:150,c:"12F + 138M",r:7,ep:35,ec:30,n:"12 First + 42 E+ + 96 std Y (AeroLOPA: ua-32s)."},
+        {a:"Delta",t:157,c:"16F + 141M",r:6,ep:34,ec:31,n:"16 First + 36 C+ + 105 std Y."}
+      ]},
+    { id:"a320", label:"A320ceo", mfr:"Airbus", spr:6, usable:870, maxRows:30, exitLimit:180, def:[0,35,29],
+      anchor:"EasyJet 180M / 30 rows @ 29\" = 870\" \u2192 180 \u2713",
+      ex:[
+        {a:"EasyJet",t:180,c:"180M",r:0,ep:35,ec:29,n:"All-Y, 30 rows at 29\"."},
+        {a:"Delta",t:160,c:"16F + 144M",r:6,ep:34,ec:31,n:"16 First + 36 C+ + 108 std Y."},
+        {a:"United",t:150,c:"12F + 138M",r:7,ep:35,ec:30,n:"12 First + 42 E+ + 96 std Y."},
+        {a:"American",t:150,c:"12F + 138M",r:4,ep:35,ec:30,n:"12 First + 24 MCE + 114 std Y."}
+      ]},
+    { id:"738", label:"737-800", mfr:"Boeing", spr:6, usable:914, maxRows:33, exitLimit:189, def:[0,35,30],
+      anchor:"Ryanair 189M / rows 1-33 @ 29\" (row 1=3 seats, no row 13). Usable=914\" (AeroLOPA: fr-738).",
+      ex:[
+        {a:"Ryanair",t:189,c:"189M",r:0,ep:35,ec:29,n:"Max density. Row 1=3 seats, no row 13."},
+        {a:"Southwest",t:175,c:"175M",r:0,ep:35,ec:32,n:"Open seating (AeroLOPA: wn-738)."},
+        {a:"American",t:172,c:"16F + 156M",r:4,ep:35,ec:30,n:"16 First + 24 MCE + 132 std Y (AeroLOPA: aa-738k)."},
+        {a:"United",t:166,c:"16F + 150M",r:9,ep:35,ec:30,n:"16 First + 54 E+ + 96 std Y (AeroLOPA: ua-73q)."},
+        {a:"Delta",t:160,c:"16F + 144M",r:6,ep:34,ec:31,n:"16 First + 36 C+ + 108 std Y (AeroLOPA: dl-73h)."},
+        {a:"Alaska",t:162,c:"12F + 150M",r:5,ep:35,ec:31,n:"12 First + 30 Premium + 120 std Y (AeroLOPA: as-738)."}
+      ]},
+    { id:"739", label:"737-900ER", mfr:"Boeing", spr:6, usable:1003, maxRows:39, exitLimit:215, def:[0,35,30],
+      anchor:"Lion Air 215M / rows 1-39 @ 28\" \u2192 usable=1003\" (AeroLOPA: jt-739).",
+      ex:[
+        {a:"Lion Air",t:215,c:"215M",r:0,ep:35,ec:28,n:"39 rows max density @ 28\" (AeroLOPA: jt-739)."},
+        {a:"Thai Lion",t:215,c:"215M",r:0,ep:35,ec:28,n:"Same config (AeroLOPA: sl-739)."},
+        {a:"Delta",t:180,c:"20F + 160M",r:5,ep:34,ec:31,n:"20 First + 27 C+ + 133 std Y (AeroLOPA: dl-739)."},
+        {a:"United",t:179,c:"20F + 159M",r:8,ep:35,ec:30,n:"20 First + 45 E+ + 114 std Y (AeroLOPA: ua-73l)."},
+        {a:"Alaska",t:178,c:"16F + 162M",r:4,ep:35,ec:31,n:"16 First + 24 Premium + 138 std Y (AeroLOPA: as-739er)."}
+      ]},
+    { id:"7m8", label:"737 MAX 8", mfr:"Boeing", spr:6, usable:914, maxRows:32, exitLimit:189, def:[0,35,30],
+      anchor:"TUI/Flair/AC 189M / 32 rows @ 29\" \u2192 usable=914\" (AeroLOPA: by-7m8, f8-7m8). Standard MAX 8.",
+      ex:[
+        {a:"TUI / Flair / Air Canada",t:189,c:"189M",r:0,ep:35,ec:29,n:"32 rows all-Y @ 29\"."},
+        {a:"Southwest",t:175,c:"175M",r:0,ep:35,ec:32,n:"Open seating (AeroLOPA: wn-7m8)."},
+        {a:"American",t:172,c:"16F + 156M",r:4,ep:35,ec:30,n:"16 First + 24 MCE + 132 std Y (AeroLOPA: aa-7m8)."},
+        {a:"United",t:166,c:"16F + 150M",r:9,ep:35,ec:30,n:"16 First + 54 E+ + 96 std Y (AeroLOPA: ua-37e)."},
+        {a:"Alaska (2025 refit)",t:161,c:"16F + 145M",r:5,ep:35,ec:31,n:"16 First + 30 Premium + 115 std Y (AeroLOPA: as-7m8-2)."}
+      ]},
+    { id:"7m9", label:"737 MAX 9", mfr:"Boeing", spr:6, usable:1063, maxRows:38, exitLimit:220, def:[0,35,29],
+      anchor:"Lion Air 220M @ 29\" = Boeing certified max \u2192 usable=1063\" (Simple Flying + AeroLOPA).",
+      ex:[
+        {a:"Lion Air",t:220,c:"220M",r:0,ep:35,ec:29,n:"Boeing certified max. 3 aircraft as of Apr 2025."},
+        {a:"SCAT Airlines",t:213,c:"213M",r:0,ep:35,ec:29,n:"Dense all-Y @ 28-29\" pitch."},
+        {a:"Icelandair",t:178,c:"16J + 162M",r:4,ep:37,ec:31,n:"4 rows Saga (rows 1-4) + 27 eco rows (rows 5-31). AeroLOPA: fi-7m9."},
+        {a:"flydubai",t:172,c:"16C + 156M",r:4,ep:37,ec:30,n:"16 Business + 156 Economy (AeroLOPA: fz-7m9)."},
+        {a:"United",t:179,c:"20F + 159M",r:8,ep:35,ec:30,n:"20 First + 45 E+ + 114 std Y (AeroLOPA: ua-39m-2)."},
+        {a:"Alaska",t:178,c:"16F + 162M",r:4,ep:35,ec:31,n:"16 First + 24 Premium + 138 std Y (AeroLOPA: as-7m9)."}
+      ]},
+    { id:"a22", label:"A220-300", mfr:"Airbus", spr:5, usable:870, maxRows:29, exitLimit:150, def:[0,34,30],
+      anchor:"airBaltic 145M / 29 rows @ 30\" = 870\" \u2192 145 \u2713 Perfect. 5-abreast.",
+      ex:[
+        {a:"airBaltic",t:145,c:"145M",r:0,ep:34,ec:30,n:"All-Y, 29 rows @ 30\". Perfect back-calc."},
+        {a:"Delta",t:130,c:"12F + 118M",r:9,ep:35,ec:30,n:"12 First + 43 C+ + 75 std Y (AeroLOPA: dl-223)."},
+        {a:"Air Canada",t:137,c:"12J + 125M",r:4,ep:37,ec:30,n:"12 Business + 20 Preferred + 105 std Y (AeroLOPA: ac-223)."}
+      ]}
+  ];
+
+  // ---- State ----
+  var acId = "7m9";
+  var epRows, epPitch, ecPitch, activeEx = null;
+
+  function getAc() { return AIRCRAFT.find(function (a) { return a.id === acId; }); }
+
+  // ---- Element refs ----
+  var $ = function (id) { return document.getElementById(id); };
+  var selectEl = $("acSelect");
+  var epRowsEl = $("ep_rows"), epPitchEl = $("ep_pitch"), ecPitchEl = $("ec_pitch");
+
+  // Populate dropdown
+  AIRCRAFT.forEach(function (a) {
+    var o = document.createElement("option");
+    o.value = a.id; o.textContent = a.mfr + " " + a.label;
+    selectEl.appendChild(o);
+  });
+  selectEl.value = acId;
+
+  function esc(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function applyAircraftDefaults() {
+    var ac = getAc();
+    epRows = ac.def[0]; epPitch = ac.def[1]; ecPitch = ac.def[2];
+    activeEx = null;
+    // Eco+ rows max depends on aircraft
+    epRowsEl.max = String(Math.min(10, ac.maxRows - 2));
+  }
+
+  function render() {
+    var ac = getAc();
+
+    // Derived (ported exactly from original) ---
+    var epLen = epRows * epPitch;
+    var rem = ac.usable - epLen;
+    var rawEcRows = rem > 0 ? Math.floor(rem / ecPitch) : 0;
+    var ecRows = Math.min(rawEcRows, ac.maxRows - epRows);
+    var totalRows = epRows + ecRows;
+    var epSeats = epRows * ac.spr;
+    var ecSeats = ecRows * ac.spr;
+    var rawTotal = epSeats + ecSeats;
+    var total = ac.exitLimit ? Math.min(rawTotal, ac.exitLimit) : rawTotal;
+    var atCap = ac.exitLimit && rawTotal >= ac.exitLimit;
+    var overRows = totalRows > ac.maxRows;
+
+    var warn = overRows
+      ? "\u26a0 " + totalRows + " rows exceeds the " + ac.maxRows + "-row physical limit."
+      : atCap ? "\u26a0 At or near the certified exit limit of " + ac.exitLimit + " seats." : null;
+
+    // Cards
+    $("m_total").textContent = total;    $("m_total_s").textContent = ac.spr + "-abreast";
+    $("m_ep").textContent = epSeats;     $("m_ep_s").textContent = epRows + " rows @ " + epPitch + '"';
+    $("m_ec").textContent = ecSeats;     $("m_ec_s").textContent = ecRows + " rows @ " + ecPitch + '"';
+    $("m_rows").textContent = totalRows; $("m_rows_s").textContent = "max " + ac.maxRows + " physical";
+
+    // Slider values + displays
+    epRowsEl.value = epRows;   $("ep_rows_v").textContent = epRows + " rows";
+    epPitchEl.value = epPitch; $("ep_pitch_v").textContent = epPitch + '"';
+    ecPitchEl.value = ecPitch; $("ec_pitch_v").textContent = ecPitch + '"';
+
+    // Breakdown table
+    var tb = "";
+    if (epRows > 0) {
+      tb += '<tr><td class="name">Economy+</td><td class="dim">' + epRows + ' rows</td>' +
+            '<td class="dim">' + epPitch + '"</td><td class="num">' + epSeats + '</td></tr>';
+    }
+    tb += '<tr class="alt"><td class="name">Economy</td><td class="dim">' + ecRows + ' rows</td>' +
+          '<td class="dim">' + ecPitch + '"</td><td class="num">' + ecSeats + '</td></tr>';
+    tb += '<tr class="total"><td colspan="3">Total</td><td class="num">' + total + '</td></tr>';
+    $("breakdown").innerHTML = tb;
+
+    // Config buttons
+    var cl = "";
+    ac.ex.forEach(function (ex) {
+      var active = activeEx === ex.a;
+      cl += '<button class="cfg-btn' + (active ? ' active' : '') + '" data-a="' + esc(ex.a) + '">' +
+              '<div class="cfg-left">' +
+                '<span class="cfg-a">' + esc(ex.a) + '</span>' +
+                '<span class="cfg-c">' + esc(ex.c) + '</span>' +
+                '<p class="cfg-n">' + esc(ex.n) + '</p>' +
+              '</div>' +
+              '<div class="cfg-right"><span class="cfg-t">' + ex.t + '</span>' +
+                '<span class="cfg-seats">seats</span></div>' +
+            '</button>';
+    });
+    $("cfgList").innerHTML = cl;
+
+    // Anchor + warning
+    $("anchor").textContent = "\ud83d\udccc " + ac.anchor;
+    var warnEl = $("warn");
+    if (warn) { warnEl.textContent = warn; warnEl.style.display = ""; }
+    else { warnEl.style.display = "none"; }
+  }
+
+  // ---- Events ----
+  selectEl.addEventListener("change", function () {
+    acId = selectEl.value;
+    applyAircraftDefaults();
+    render();
+  });
+
+  epRowsEl.addEventListener("input", function () { epRows = parseInt(epRowsEl.value, 10); activeEx = null; render(); });
+  epPitchEl.addEventListener("input", function () { epPitch = parseInt(epPitchEl.value, 10); activeEx = null; render(); });
+  ecPitchEl.addEventListener("input", function () { ecPitch = parseInt(ecPitchEl.value, 10); activeEx = null; render(); });
+
+  // Config buttons (delegated, since innerHTML is rebuilt each render)
+  $("cfgList").addEventListener("click", function (e) {
+    var btn = e.target.closest(".cfg-btn");
+    if (!btn) return;
+    var name = btn.getAttribute("data-a");
+    var ac = getAc();
+    var ex = ac.ex.find(function (x) { return x.a === name; });
+    if (!ex) return;
+    epRows = ex.r; epPitch = ex.ep; ecPitch = ex.ec; activeEx = ex.a;
+    render();
+  });
+
+  // ---- Init ----
+  applyAircraftDefaults();
+  render();
+})();
+</script>
+</body>
+</html>

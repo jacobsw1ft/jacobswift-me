@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safe Steps — Pediatric Safety Chutes &amp; Ladders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EEF4F6; --board:#FFFFFF; --ink:#1F3A44; --ink-soft:#557079;
+    --teal:#1B7A8C; --teal-deep:#13606F; --green:#2E9E6B; --green-soft:#E4F4EC;
+    --coral:#E8654E; --coral-soft:#FBE7E2; --sun:#F2B441; --grid:#DDE8EB;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0;font-family:'Nunito',system-ui,sans-serif;
+    background:radial-gradient(circle at 12% 6%,#F7FBFC 0%,transparent 42%),
+               radial-gradient(circle at 92% 94%,#FCEFE9 0%,transparent 40%),var(--paper);
+    color:var(--ink);line-height:1.5;padding:clamp(14px,3vw,36px);}
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  header.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 18px;margin-bottom:14px;}
+  .eyebrow{font-family:'Baloo 2',cursive;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    font-size:.72rem;color:var(--teal);display:flex;align-items:center;gap:8px;width:100%;}
+  .eyebrow::before{content:"";width:26px;height:3px;border-radius:3px;background:var(--sun);}
+  h1{font-family:'Baloo 2',cursive;font-weight:800;font-size:clamp(1.9rem,5vw,3rem);line-height:1;margin:0;color:var(--ink);}
+  h1 .acc{color:var(--teal);}
+  .sub{font-size:1rem;color:var(--ink-soft);max-width:62ch;margin:0;font-weight:600;}
+
+  .card{background:var(--board);border-radius:20px;box-shadow:0 1px 0 #fff inset,0 18px 40px -28px rgba(19,96,111,.55);border:1px solid #E3EDEF;}
+
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px 24px;padding:16px 20px;margin:18px 0;}
+  .spin-wrap{display:flex;align-items:center;gap:16px;}
+  svg.wheel{width:128px;height:138px;flex:none;}
+  #wheelG{transform-box:fill-box;transform-origin:center;transition:transform 2.7s cubic-bezier(.12,.62,.14,1);}
+  .spin-side{display:flex;flex-direction:column;gap:8px;}
+  .btn{font-family:'Baloo 2',cursive;font-weight:700;font-size:1.05rem;cursor:pointer;border:none;border-radius:14px;
+    padding:13px 24px;color:#fff;background:var(--teal);box-shadow:0 8px 18px -8px rgba(19,96,111,.8);
+    transition:transform .08s ease,filter .15s ease;}
+  .btn:hover{filter:brightness(1.06);} .btn:active{transform:translateY(2px);}
+  .btn:disabled{background:#B9CDD2;box-shadow:none;cursor:default;filter:none;transform:none;}
+  .btn.ghost{background:#fff;color:var(--teal);border:2px solid var(--grid);box-shadow:none;padding:11px 16px;font-size:.92rem;}
+  .btn.ghost:hover{border-color:var(--teal);}
+  .spun{font-family:'Baloo 2',cursive;font-weight:700;color:var(--ink-soft);font-size:.9rem;min-height:1.2em;}
+  .spun b{color:var(--teal);font-size:1.15rem;}
+
+  .turn-tag{font-family:'Baloo 2',cursive;font-weight:700;font-size:1.1rem;display:flex;align-items:center;gap:10px;margin-left:auto;}
+  .turn-dot{width:20px;height:20px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.08);}
+  .setup{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--ink-soft);font-size:.88rem;}
+  .pcount{display:flex;gap:6px;}
+  .pcount button{width:36px;height:36px;border-radius:10px;border:2px solid var(--grid);background:#fff;
+    font-family:'Baloo 2',cursive;font-weight:700;font-size:1rem;color:var(--ink-soft);cursor:pointer;}
+  .pcount button[aria-pressed="true"]{background:var(--teal);color:#fff;border-color:var(--teal);}
+
+  .board-card{padding:14px;}
+  .board-head{display:flex;justify-content:space-between;align-items:center;padding:2px 6px 12px;gap:10px 16px;flex-wrap:wrap;}
+  .legend{display:flex;gap:16px;font-size:.82rem;font-weight:700;color:var(--ink-soft);flex-wrap:wrap;align-items:center;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .swatch{width:14px;height:14px;border-radius:5px;}
+  .swatch.up{background:var(--green);} .swatch.down{background:var(--coral);}
+  svg.board{width:100%;height:auto;display:block;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px;}
+  @media(max-width:760px){ .grid2{grid-template-columns:1fr;} }
+  .pad{padding:18px 20px;}
+  .pad h2{font-family:'Baloo 2',cursive;font-size:1.15rem;margin:0 0 10px;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .pad h2 .tag{font-size:.64rem;background:var(--sun);color:#5a4200;padding:2px 8px;border-radius:20px;font-weight:800;}
+  .log ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto;}
+  .log li{font-size:.82rem;font-weight:600;color:var(--ink);border-left:4px solid var(--grid);padding:6px 10px;background:#F7FAFB;border-radius:0 10px 10px 0;}
+  .log li.win{border-color:var(--green);} .log li.lose{border-color:var(--coral);}
+  .log li b{font-family:'Baloo 2',cursive;}
+  .log .empty{font-style:italic;color:var(--ink-soft);font-weight:600;font-size:.82rem;}
+
+  details.key{font-size:.86rem;}
+  details.key summary{cursor:pointer;font-weight:700;color:var(--teal);font-family:'Baloo 2',cursive;}
+  .keyitem{padding:10px 0;border-bottom:1px dashed var(--grid);}
+  .keyitem:last-child{border-bottom:none;}
+  .keyitem .qh{font-weight:700;color:var(--ink);}
+  .keyitem .qh .pill{font-size:.62rem;color:#fff;border-radius:20px;padding:2px 7px;font-weight:800;margin-right:6px;}
+  .keyitem .pill.up{background:var(--green);} .keyitem .pill.down{background:var(--coral);}
+  .keyitem .ans{color:var(--green);font-weight:700;margin-top:2px;}
+  .keyitem .why{color:var(--ink-soft);font-weight:600;margin-top:2px;}
+
+  .how b{color:var(--ink);font-family:'Baloo 2',cursive;}
+
+  .scrim{position:fixed;inset:0;background:rgba(20,50,58,.55);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;padding:18px;z-index:50;}
+  .scrim.show{display:flex;}
+  .modal{background:#fff;border-radius:22px;max-width:480px;width:100%;padding:24px;
+    box-shadow:0 30px 60px -20px rgba(19,40,48,.6);animation:pop .26s cubic-bezier(.2,1.2,.3,1);max-height:92vh;overflow:auto;}
+  @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal .kind{font-family:'Baloo 2',cursive;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.72rem;display:flex;align-items:center;gap:8px;}
+  .modal.up .kind{color:var(--green);} .modal.down .kind{color:var(--coral);}
+  .modal .kind .ic{font-size:1.1rem;}
+  .modal h3{font-family:'Baloo 2',cursive;font-size:1.25rem;line-height:1.25;margin:8px 0 4px;color:var(--ink);}
+  .modal .hint{font-size:.84rem;color:var(--ink-soft);font-weight:700;margin:0 0 14px;}
+  .opts{display:flex;flex-direction:column;gap:9px;margin-bottom:16px;}
+  .opt{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border:2px solid var(--grid);border-radius:13px;
+    cursor:pointer;font-weight:600;font-size:.92rem;background:#fff;transition:border-color .12s,background .12s;}
+  .opt:hover{border-color:#BcD3D8;}
+  .opt .mark{width:22px;height:22px;border-radius:7px;border:2px solid #C3D3D7;flex:none;display:flex;align-items:center;justify-content:center;
+    font-family:'Baloo 2',cursive;font-weight:800;font-size:.8rem;color:#fff;background:#fff;margin-top:1px;}
+  .opt.radio .mark{border-radius:50%;}
+  .opt.sel{border-color:var(--teal);background:#EFF6F8;}
+  .opt.sel .mark{background:var(--teal);border-color:var(--teal);}
+  .opt.correct{border-color:var(--green);background:var(--green-soft);}
+  .opt.correct .mark{background:var(--green);border-color:var(--green);}
+  .opt.wrong{border-color:var(--coral);background:var(--coral-soft);}
+  .opt.wrong .mark{background:var(--coral);border-color:var(--coral);}
+  .opt.locked{cursor:default;}
+  .feedback{border-radius:13px;padding:13px 15px;margin-bottom:16px;font-weight:700;font-size:.9rem;display:none;}
+  .feedback.show{display:block;}
+  .feedback.good{background:var(--green-soft);color:#1c6b48;}
+  .feedback.bad{background:var(--coral-soft);color:#a23a28;}
+  .feedback .why{font-weight:600;color:var(--ink-soft);margin-top:6px;}
+  .modal .btn{width:100%;}
+  .modal.win{text-align:center;}
+  .modal.win .trophy{font-size:3rem;}
+  .modal.win h3{font-size:1.7rem;margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Pediatric Safety Education · Clinic · Procedural · Critical &amp; Acute Care</div>
+    <h1>Safe <span class="acc">Steps</span></h1>
+    <p class="sub">A chutes &amp; ladders game about catching risky behavior. Spin, move, and when you reach a ladder or a chute, answer a safety question to climb — or to keep from sliding back. Questions are drawn at random, so each landing is a fresh one.</p>
+  </header>
+
+  <section class="card controls">
+    <div class="spin-wrap">
+      <svg class="wheel" id="wheel" viewBox="0 0 160 172" aria-label="Spinner 1 to 10"></svg>
+      <div class="spin-side">
+        <button class="btn" id="spinBtn">Spin</button>
+        <div class="spun" id="spun">Spin to begin</div>
+      </div>
+    </div>
+    <div class="setup">
+      Players:
+      <div class="pcount" id="pcount">
+        <button data-n="2" aria-pressed="true">2</button>
+        <button data-n="3" aria-pressed="false">3</button>
+        <button data-n="4" aria-pressed="false">4</button>
+      </div>
+      <button class="btn ghost" id="resetBtn">New game</button>
+    </div>
+    <div class="turn-tag"><span class="turn-dot" id="turnDot"></span><span id="turnText">Player 1</span></div>
+  </section>
+
+  <section class="card board-card">
+    <div class="board-head">
+      <strong style="font-family:'Baloo 2';color:var(--ink);">Climb to space 50</strong>
+      <div class="legend">
+        <span><i class="swatch up"></i>Ladder — 1 right of 4 to climb</span>
+        <span><i class="swatch down"></i>Chute — both right of 2 to stay</span>
+      </div>
+    </div>
+    <svg class="board" id="board" viewBox="0 0 1000 500" role="img" aria-label="Game board"></svg>
+  </section>
+
+  <div class="card pad how" style="margin-top:4px;font-size:.86rem;color:var(--ink-soft);font-weight:600;">
+    <b>How to play:</b> On your turn, press Spin (1–10) and your token moves that many spaces — you can land anywhere.
+    Land on the <b style="color:#2E9E6B">base of a ladder</b> and answer one question correctly to climb up.
+    Land on the <b style="color:#E8654E">top of a chute</b> and you must pick <b>both</b> correct actions to keep your footing; miss and you slide down.
+    Overshoot 50 and you bounce back. First to land exactly on 50 wins.
+  </div>
+
+  <div class="grid2">
+    <section class="card pad log">
+      <h2>Discussion log <span class="tag">talking points</span></h2>
+      <ul id="logList"><li class="empty">Each question answered shows up here for the debrief.</li></ul>
+    </section>
+    <section class="card pad">
+      <h2>Facilitator answer key</h2>
+      <details class="key"><summary>Show the full question bank, answers &amp; rationale</summary>
+        <div id="keyBody" style="margin-top:10px;"></div>
+      </details>
+    </section>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"><div class="modal" id="modal"></div></div>
+
+<script>
+/* ===================== BOARD FEATURES (geometry only) ===================== */
+const LADDERS = { 3:{top:22}, 8:{top:26}, 17:{top:35}, 20:{top:39}, 28:{top:44}, 33:{top:48} };
+const CHUTES  = { 16:{bottom:6}, 24:{bottom:11}, 31:{bottom:14}, 38:{bottom:19}, 43:{bottom:25}, 47:{bottom:30} };
+
+/* ===================== QUESTION BANKS =====================
+   6 ladder squares + 6 chute squares = 12 question spots.
+   Banks below hold 14 + 14 = 28 questions (>2x), drawn in shuffled order so a
+   square shows a different question each landing and repeats are rare.        */
+
+/* Ladders: ONE best answer of four. Answer right -> climb. */
+const LADDER_Q = [
+  {q:"Before giving a medication to a 3-year-old, how should you verify identity?",
+   opts:["Confirm the room and bed number match the MAR","Scan the ID band and confirm two identifiers such as name and date of birth","Ask the child to say their name and proceed","Trust the label the previous nurse left at the bedside"],
+   correct:1, why:"Use two patient identifiers verified on the armband — never room/bed number or an unverified label."},
+  {q:"A weight-based dose is ordered for an infant. What must you verify first?",
+   opts:["The weight is measured, current, and documented in kilograms","The infant looks about average size","The weight in pounds matches the family's estimate","A similar infant received a similar dose"],
+   correct:0, why:"Peds doses are per kg; a lb/kg error is a >2x overdose. Confirm a current measured weight in kg."},
+  {q:"You are about to give IV insulin to a child. What is the safest practice?",
+   opts:["Give it quickly since insulin acts slowly","Estimate the dose from the vial markings","Have a second nurse perform an independent double-check of the dose","Measure the units in a standard IV syringe"],
+   correct:2, why:"Insulin is high-alert; an independent double-check catches dosing errors before they reach the child."},
+  {q:"You receive a telephone order during a busy shift. What should you do?",
+   opts:["Write it down later from memory","Read the order back to the prescriber and get confirmation","Round the dose to a number that's easier to give","Ask another nurse to guess the intended dose"],
+   correct:1, why:"Read-back with confirmation prevents mishearing verbal orders, a leading source of medication error."},
+  {q:"Before accessing a child's central line, what is essential?",
+   opts:["Perform hand hygiene and scrub the hub with antiseptic before access","Access it quickly to minimize handling time","Wipe the hub only if it looks dirty","Reuse the same cap from the last access"],
+   correct:0, why:"Hand hygiene plus hub scrubbing reduces central-line bloodstream infections, a major pediatric harm."},
+  {q:"You are starting a blood transfusion. What is required at the bedside?",
+   opts:["One nurse can verify if the unit is busy","Verify the patient and the blood product with a second qualified staff member","Begin, then check the paperwork afterward","Match only the patient's first name to the unit"],
+   correct:1, why:"Two-person verification of patient identity and product prevents fatal transfusion mismatches."},
+  {q:"A child needs procedural sedation in the clinic. What monitoring is essential?",
+   opts:["A blood pressure check every 30 minutes","Occasional visual checks by whoever is nearby","Continuous pulse oximetry with a person whose only job is to monitor the child","Monitoring that begins after the procedure ends"],
+   correct:2, why:"Sedation requires continuous oxygenation/ventilation monitoring and a dedicated monitor to catch early compromise."},
+  {q:"Before an NG-tube feeding, how should you confirm tube placement in a child?",
+   opts:["Verify placement per policy, such as pH testing or radiographic confirmation","Push air and listen over the stomach","Assume it's fine if the child isn't coughing","Confirm only by the external tube length"],
+   correct:0, why:"Auscultation is unreliable; pH or radiographic checks per policy prevent feeding into the lungs."},
+  {q:"When should you perform hand hygiene while caring for an immunocompromised child?",
+   opts:["Only when your hands look soiled","Before and after contact, before aseptic tasks, and after exposure to fluids or surroundings","Once at the start of the shift","Only after removing gloves"],
+   correct:1, why:"Follow the WHO 5 Moments. Gloves do not replace hand hygiene."},
+  {q:"An ordered dose looks far too high for the child's weight. What is the best action?",
+   opts:["Give it because the provider ordered it","Give half to be cautious","Hold the dose and clarify with the provider or pharmacy before giving","Ask the family whether it seems right"],
+   correct:2, why:"Hold and verify a high-risk discrepancy. Anyone can stop the line before a potential overdose."},
+  {q:"HYDROmorphone and morphine are both stocked and an opioid is ordered. What is safest?",
+   opts:["Grab whichever is closest since both are opioids","Carefully confirm the exact drug and concentration against the order","Use the one with the shorter name","Ask the family which they've had before"],
+   correct:1, why:"These look-alike/sound-alike opioids are not interchangeable; confirm the exact drug and strength."},
+  {q:"Before infusing a vesicant through a peripheral IV, what should you do?",
+   opts:["Confirm blood return and assess the site for patency before and during the infusion","Start it fast to finish before the child moves","Cover the site so the family can't see it","Skip the check if the IV was placed today"],
+   correct:0, why:"Vesicant extravasation causes serious tissue injury; verify patency and monitor the site throughout."},
+  {q:"A child has a documented penicillin allergy and an antibiotic is ordered. What should you do first?",
+   opts:["Give it if the child looks well","Check the allergy band and record, and clarify the order before administering","Give a smaller dose to test the reaction","Ask the roommate's nurse for advice"],
+   correct:1, why:"Reconcile every order against documented allergies and clarify before giving to prevent anaphylaxis."},
+  {q:"Preparing for a possible pediatric resuscitation, what is a key safety step?",
+   opts:["Wait until the code is called to size equipment","Use adult equipment and adjust as you go","Confirm the code cart is checked and use a length-based (Broselow) tool for sizing and dosing","Estimate the child's weight by sight"],
+   correct:2, why:"Length-based tools give weight-appropriate equipment and drug doses, reducing errors in an emergency."}
+];
+
+/* Chutes: select BOTH correct actions of four. Get both -> keep footing; miss -> slide. */
+const CHUTE_Q = [
+  {q:"A continuous monitor alarms on a sleeping infant. Select the TWO appropriate actions.",
+   opts:["Assess the infant before silencing the alarm","Silence it and keep charting","Check probe and lead placement and the infant's actual status","Widen the alarm limits so it stops alerting"],
+   correct:[0,2], why:"Treat alarms as real: assess the patient and verify the signal. Don't silence or widen limits to quiet a nuisance."},
+  {q:"You take a telephone order during an emergency. Select the TWO safety requirements.",
+   opts:["Enter it later from memory","Read the order back and get prescriber confirmation","Document drug, dose, route, rate, time, and prescriber","Round the dose to an easier number"],
+   correct:[1,2], why:"Read-back plus complete documentation prevent verbal-order errors. Never alter a dose or rely on memory."},
+  {q:"To reduce fall and suffocation risk for an infant in a crib, select the TWO best practices.",
+   opts:["Raise and lock the crib rails whenever you step away","Pad the crib with bumpers and pillows","Lower a rail to chart faster at the bedside","Keep a hand on the infant whenever the rails are down"],
+   correct:[0,3], why:"Rails up when unattended and a hand on the infant when they're down. Soft bedding raises suffocation risk."},
+  {q:"To prevent a wrong-medication error in peds, select the TWO best practices.",
+   opts:["Borrow a dose from another patient's supply to save time","Barcode-scan the patient and the medication","Separate look-alike/sound-alike drugs and use tall-man lettering","Pre-pour several patients' medications together"],
+   correct:[1,2], why:"Scanning and LASA separation catch wrong-patient/wrong-drug errors. Borrowing and batch-pouring invite mix-ups."},
+  {q:"For a safe shift handoff on the unit, select the TWO best practices.",
+   opts:["Use a structured tool (SBAR / I-PASS), ideally at the bedside","Hand off quickly in the hallway from memory","Review high-alert meds, lines/drains, and pending tasks together","Skip the medication review to save time"],
+   correct:[0,2], why:"Structured, bedside handoffs with explicit review of high-risk items reduce dangerous omissions."},
+  {q:"A child's heart rate is climbing and they are becoming less responsive. Select the TWO appropriate actions.",
+   opts:["Escalate using the early-warning or rapid-response pathway","Wait for the next scheduled vitals to recheck","Silence the monitor and reassure the family it's fine","Reassess ABCs and notify the provider promptly"],
+   correct:[0,3], why:"Early recognition and escalation prevent failure-to-rescue. Don't wait on or quiet a deteriorating child."},
+  {q:"When accessing and re-capping a child's central line, select the TWO safe actions.",
+   opts:["Scrub the hub with antiseptic and let it dry before access","Reuse the previous needleless cap to save supplies","Leave the line uncapped while you gather supplies","Perform hand hygiene and use aseptic technique throughout"],
+   correct:[0,3], why:"Hub scrubbing and aseptic technique prevent CLABSIs. Never reuse caps or leave the line open to air."},
+  {q:"After giving an injection, select the TWO safe sharps practices.",
+   opts:["Recap the needle by hand to be tidy","Activate the needle's safety device immediately","Dispose of the sharp in the sharps container at the point of use","Set it on the tray to discard later"],
+   correct:[1,2], why:"Engage the safety device and dispose at point of use. Recapping or leaving sharps out causes needlestick injuries."},
+  {q:"An adolescent is admitted with suicidal ideation. Select the TWO required safety actions.",
+   opts:["Maintain the ordered level of observation","Leave the patient alone if they promise to be safe","Remove accessible hazards from the room per protocol","Assume the family will watch and step away"],
+   correct:[0,2], why:"Continuous ordered observation and removing hazards are core to inpatient suicide safety; a promise is not a safeguard."},
+  {q:"A young child has a generalized seizure. Select the TWO appropriate actions.",
+   opts:["Hold the limbs firmly to stop the movements","Position the child on their side and protect the head","Place a padded object in the mouth to protect the teeth","Note the time, stay with the child, and call for help"],
+   correct:[1,3], why:"Side-lying protects the airway and timing guides treatment. Never restrain limbs or put anything in the mouth."},
+  {q:"Programming an infusion pump for a high-alert drip, select the TWO safe practices.",
+   opts:["Use the pump's drug library (guardrails) for the medication","Run the high-alert infusion by gravity to save time","Perform an independent double-check of the pump settings","Click past dose alerts to keep things moving"],
+   correct:[0,2], why:"Drug-library limits plus an independent double-check catch programming errors; bypassing them removes the safety net."},
+  {q:"Caring for a child on contact precautions, select the TWO correct actions.",
+   opts:["Skip the gown for a quick task","Don the required PPE before entering the room","Share the stethoscope with the next room without cleaning","Use dedicated or disinfected equipment for that patient"],
+   correct:[1,3], why:"Correct PPE and dedicated/cleaned equipment stop transmission; shortcuts spread resistant organisms."},
+  {q:"A vesicant IV is running and the site is swollen, pale, and firm. Select the TWO appropriate actions.",
+   opts:["Keep the infusion going to finish the dose","Stop the infusion immediately","Notify the provider and follow the extravasation protocol","Apply firm pressure and continue the infusion"],
+   correct:[1,2], why:"Suspected vesicant extravasation is an emergency: stop the infusion and follow the extravasation protocol at once."},
+  {q:"Preparing to move an intubated child in the ICU, select the TWO safe actions.",
+   opts:["Secure the endotracheal tube and confirm its depth first","Disconnect monitoring to reduce clutter during the move","Ensure enough trained staff and coordinate the move together","Move quickly and alone to minimize the child's discomfort"],
+   correct:[0,2], why:"Securing the airway and coordinating adequate staff prevent unplanned extubation and falls during transfers."}
+];
+
+/* shuffle-bag draw: cycle through the whole bank (shuffled) before any repeat */
+let ladderBag=[], chuteBag=[];
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function drawLadderQ(){ if(!ladderBag.length) ladderBag=shuffle(LADDER_Q.map((_,i)=>i)); return LADDER_Q[ladderBag.pop()]; }
+function drawChuteQ(){ if(!chuteBag.length) chuteBag=shuffle(CHUTE_Q.map((_,i)=>i)); return CHUTE_Q[chuteBag.pop()]; }
+
+/* ===================== BOARD GEOMETRY (10 x 5, boustrophedon) ===================== */
+const COLS=10, ROWS=5, N=50, CELL=100;
+function center(n){
+  const r=Math.floor((n-1)/COLS), p=(n-1)%COLS;
+  const col=(r%2===0)?p:(COLS-1-p);
+  const vrow=(ROWS-1)-r;
+  return {x:col*CELL+CELL/2, y:vrow*CELL+CELL/2};
+}
+const SVGNS="http://www.w3.org/2000/svg";
+const board=document.getElementById('board');
+function el(tag,attrs){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+
+function drawLadder(from,to){
+  const a=center(from), b=center(to);
+  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux, w=10;
+  const ax=a.x+ux*30, ay=a.y+uy*30, bx=b.x-ux*30, by=b.y-uy*30;
+  const g=el('g',{filter:"url(#soft)"}); const c="#2E9E6B";
+  [1,-1].forEach(s=>g.appendChild(el('line',{x1:ax+px*w*s,y1:ay+py*w*s,x2:bx+px*w*s,y2:by+py*w*s,stroke:c,"stroke-width":5,"stroke-linecap":"round"})));
+  const rl=Math.hypot(bx-ax,by-ay), rungs=Math.max(3,Math.round(rl/30));
+  for(let i=0;i<=rungs;i++){const t=i/rungs, cx=ax+(bx-ax)*t, cy=ay+(by-ay)*t;
+    g.appendChild(el('line',{x1:cx+px*w,y1:cy+py*w,x2:cx-px*w,y2:cy-py*w,stroke:c,"stroke-width":4,"stroke-linecap":"round"}));}
+  board.appendChild(g);
+}
+function drawChute(from,to){
+  const a=center(from), b=center(to);
+  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux, w=12;
+  const ax=a.x+ux*30, ay=a.y+uy*30, bx=b.x-ux*34, by=b.y-uy*34;
+  const mx=(ax+bx)/2+px*22, my=(ay+by)/2+py*22;
+  const g=el('g',{filter:"url(#soft)"});
+  g.appendChild(el('path',{d:`M ${ax+px*w} ${ay+py*w} Q ${mx+px*w} ${my+py*w} ${bx+px*w} ${by+py*w} L ${bx-px*w} ${by-py*w} Q ${mx-px*w} ${my-py*w} ${ax-px*w} ${ay-py*w} Z`,fill:"#F7C2B6",stroke:"#E8654E","stroke-width":3,"stroke-linejoin":"round"}));
+  g.appendChild(el('path',{d:`M ${ax} ${ay} Q ${mx} ${my} ${bx} ${by}`,fill:"none",stroke:"#E8654E","stroke-width":2.5,"stroke-dasharray":"3 7","stroke-linecap":"round"}));
+  const tx=b.x-ux*8, ty=b.y-uy*8;
+  g.appendChild(el('path',{d:`M ${tx} ${ty} L ${tx-ux*16+px*9} ${ty-uy*16+py*9} L ${tx-ux*16-px*9} ${ty-uy*16-py*9} Z`,fill:"#E8654E"}));
+  board.appendChild(g);
+}
+
+function drawBoard(){
+  board.innerHTML="";
+  const defs=el('defs',{});
+  defs.innerHTML=`<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#13606F" flood-opacity="0.18"/></filter>`;
+  board.appendChild(defs);
+  for(let n=1;n<=N;n++){
+    const c=center(n), r=Math.floor((n-1)/COLS), p=(n-1)%COLS;
+    const isLad=!!LADDERS[n], isChu=!!CHUTES[n], isEnd=(n===1||n===N);
+    let fill=((r+p)%2===0)?"#FFFFFF":"#F1F7F8", stroke="#E3EDEF", numCol="#A9BFC4";
+    if(isLad){fill="#E4F4EC";stroke="#9FD9BE";numCol="#5BA37E";}
+    if(isChu){fill="#FBE7E2";stroke="#F0B3A6";numCol="#C9897C";}
+    if(isEnd){fill="#FFF6E2";stroke="#F0D592";numCol="#C9A24E";}
+    const g=el('g',(isLad||isChu||isEnd)?{filter:"url(#soft)"}:{});
+    g.appendChild(el('rect',{x:c.x-47,y:c.y-47,width:94,height:94,rx:13,fill:fill,stroke:stroke,"stroke-width":2}));
+    const num=el('text',{x:c.x-38,y:c.y-30,"font-family":"'Baloo 2',sans-serif","font-size":16,"font-weight":700,fill:numCol});
+    num.textContent=n; g.appendChild(num);
+    if(isLad||isChu){
+      const bx=c.x+30, by=c.y-30, bc=isLad?"#2E9E6B":"#E8654E";
+      g.appendChild(el('circle',{cx:bx,cy:by,r:13,fill:bc,stroke:"#fff","stroke-width":2}));
+      const qt=el('text',{x:bx,y:by+5,"text-anchor":"middle","font-family":"'Baloo 2',sans-serif","font-size":15,"font-weight":800,fill:"#fff"});
+      qt.textContent="?"; g.appendChild(qt);
+    }
+    if(n===1){const t=el('text',{x:c.x,y:c.y+40,"text-anchor":"middle","font-family":"'Baloo 2',sans-serif","font-size":13,"font-weight":800,fill:"#C9A24E"});t.textContent="START";g.appendChild(t);}
+    if(n===N){const t=el('text',{x:c.x,y:c.y+8,"text-anchor":"middle","font-size":30});t.textContent="🏁";g.appendChild(t);}
+    board.appendChild(g);
+  }
+  for(const b in LADDERS) drawLadder(+b,LADDERS[b].top);
+  for(const t in CHUTES) drawChute(+t,CHUTES[t].bottom);
+  drawTokens();
+}
+
+/* ===================== PLAYERS / TOKENS ===================== */
+const RAW=["#1B7A8C","#7A5BB0","#D99A1E","#C2487E"], PNAME=["Player 1","Player 2","Player 3","Player 4"];
+let nPlayers=2, pos=[], cur=0, busy=false, tokenG=null, anim=null;
+let mustHit=[], turnHitFeature=false;   // mustHit[p]=true -> p's last turn missed all features, so force one this turn
+function offsetFor(idx,total){ if(total<=1) return {ox:0,oy:0}; const a=(Math.PI*2*idx)/total - Math.PI/2; return {ox:Math.cos(a)*16,oy:Math.sin(a)*16}; }
+function drawTokens(){
+  if(tokenG) tokenG.remove();
+  tokenG=el('g',{});
+  const coords=[], bySq={};
+  for(let i=0;i<nPlayers;i++){ if(anim&&anim.player===i) continue; (bySq[pos[i]]=bySq[pos[i]]||[]).push(i); }
+  for(const sq in bySq){ const list=bySq[sq], c=center(+sq); list.forEach((pi,k)=>{const o=offsetFor(k,list.length); coords[pi]={x:c.x+o.ox,y:c.y+o.oy};}); }
+  if(anim) coords[anim.player]={x:anim.x,y:anim.y};
+  for(let i=0;i<nPlayers;i++){ const c=coords[i]; if(!c) continue;
+    tokenG.appendChild(el('circle',{cx:c.x,cy:c.y,r:15,fill:RAW[i],stroke:"#fff","stroke-width":3,filter:"url(#soft)"}));
+    const lbl=el('text',{x:c.x,y:c.y+5,"text-anchor":"middle","font-family":"'Baloo 2',sans-serif","font-size":15,"font-weight":800,fill:"#fff"});
+    lbl.textContent=i+1; tokenG.appendChild(lbl);
+  }
+  board.appendChild(tokenG);
+}
+
+/* ===================== SPINNER WHEEL ===================== */
+const wheel=document.getElementById('wheel');
+let curRot=0;
+function polar(cx,cy,r,deg){ const a=(deg)*Math.PI/180; return {x:cx+r*Math.sin(a), y:cy-r*Math.cos(a)}; }
+function buildWheel(){
+  wheel.innerHTML="";
+  const cx=80,cy=86,R=70;
+  const g=el('g',{id:"wheelG"});
+  const shades=["#1B7A8C","#2E9E6B"];
+  for(let v=1;v<=10;v++){
+    const a0=(v-1)*36, a1=v*36;
+    const p0=polar(cx,cy,R,a0), p1=polar(cx,cy,R,a1);
+    g.appendChild(el('path',{d:`M ${cx} ${cy} L ${p0.x} ${p0.y} A ${R} ${R} 0 0 1 ${p1.x} ${p1.y} Z`,fill:shades[(v-1)%2],stroke:"#fff","stroke-width":1.5}));
+    const lp=polar(cx,cy,R*0.66,(a0+a1)/2);
+    const t=el('text',{x:lp.x,y:lp.y+5,"text-anchor":"middle","font-family":"'Baloo 2',sans-serif","font-size":15,"font-weight":800,fill:"#fff"});
+    t.textContent=v; g.appendChild(t);
+  }
+  wheel.appendChild(g);
+  wheel.appendChild(el('circle',{cx:cx,cy:cy,r:13,fill:"#fff",stroke:"#E3EDEF","stroke-width":2}));
+  wheel.appendChild(el('path',{d:`M ${cx-12} 6 L ${cx+12} 6 L ${cx} 26 Z`,fill:"#F2B441",stroke:"#fff","stroke-width":2,"stroke-linejoin":"round"}));
+}
+function spinWheel(v,done){
+  const a_v=(v-1)*36+18;
+  const targetMod=((360-a_v)%360+360)%360;
+  const jitter=Math.random()*22-11;
+  let base=Math.ceil(curRot/360)*360;
+  let newRot=base+360*4+targetMod+jitter;
+  if(newRot<=curRot+720) newRot+=360;
+  curRot=newRot;
+  document.getElementById('wheelG').style.transform=`rotate(${newRot}deg)`;
+  setTimeout(done,2750);
+}
+
+/* ===================== TURN ===================== */
+function setTurn(){ document.getElementById('turnDot').style.background=RAW[cur]; document.getElementById('turnText').textContent=PNAME[cur]; }
+
+/* ===================== LOG ===================== */
+const logList=document.getElementById('logList'); let logHasItems=false;
+function logQ(player,kind,data,success){
+  if(!logHasItems){logList.innerHTML="";logHasItems=true;}
+  const li=document.createElement('li');
+  li.className=success?'win':'lose';
+  const verb = kind==='up' ? (success?'climbed a ladder':'missed a ladder') : (success?'kept footing':'slid down a chute');
+  li.innerHTML=`<b>P${player+1}</b> · ${verb} — ${shortTitle(data)}`;
+  logList.prepend(li);
+}
+function shortTitle(d){ return d.q.length>60 ? d.q.slice(0,58)+"…" : d.q; }
+
+/* ===================== MOVEMENT ===================== */
+function buildPath(from,steps){
+  const path=[]; let p=from, dir=1, rem=steps;
+  while(rem>0){ let np=p+dir; if(np>N){dir=-1; np=p-1;} p=np; path.push(p); rem--; }
+  return path;
+}
+function pickForcedSpin(player){
+  const cands=[];
+  for(let s=1;s<=10;s++){ const path=buildPath(pos[player],s); const land=path[path.length-1];
+    if(LADDERS[land]||CHUTES[land]) cands.push(s); }
+  return cands.length ? cands[Math.floor(Math.random()*cands.length)] : null;
+}
+function stepThrough(player,path,done){
+  let i=0; const go=()=>{ if(i<path.length){ pos[player]=path[i]; drawTokens(); i++; setTimeout(go,110); } else done(); }; go();
+}
+function tweenMove(player,fromSpace,toSpace,done){
+  const a=center(fromSpace), b=center(toSpace), dur=680, t0=performance.now();
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  const frame=(now)=>{ let t=Math.min(1,(now-t0)/dur), te=ease(t);
+    anim={player,x:a.x+(b.x-a.x)*te,y:a.y+(b.y-a.y)*te}; drawTokens();
+    if(t<1) requestAnimationFrame(frame); else { anim=null; pos[player]=toSpace; drawTokens(); done(); } };
+  requestAnimationFrame(frame);
+}
+
+document.getElementById('spinBtn').addEventListener('click',()=>{
+  if(busy) return; busy=true;
+  document.getElementById('spinBtn').disabled=true;
+  turnHitFeature=false;
+  let v;
+  if(mustHit[cur]){ const f=pickForcedSpin(cur); v=(f!==null)?f:(1+Math.floor(Math.random()*10)); }
+  else { v=1+Math.floor(Math.random()*10); }
+  document.getElementById('spun').innerHTML="Spinning…";
+  spinWheel(v,()=>{
+    document.getElementById('spun').innerHTML=`${PNAME[cur]} spun <b>${v}</b>`;
+    const path=buildPath(pos[cur],v);
+    stepThrough(cur,path,()=>landOn(pos[cur]));
+  });
+});
+
+function landOn(space){
+  if(LADDERS[space]){ turnHitFeature=true; askQuestion('up',space,LADDERS[space].top,drawLadderQ()); }
+  else if(CHUTES[space]){ turnHitFeature=true; askQuestion('down',space,CHUTES[space].bottom,drawChuteQ()); }
+  else finishTurn();
+}
+
+function finishTurn(){
+  mustHit[cur] = !turnHitFeature;   // if this turn hit no chute/ladder, force one next turn
+  if(pos[cur]>=N){ winGame(cur); return; }
+  cur=(cur+1)%nPlayers; setTurn();
+  document.getElementById('spinBtn').disabled=false; busy=false;
+}
+
+/* ===================== QUESTION MODAL ===================== */
+const scrim=document.getElementById('scrim'), modal=document.getElementById('modal');
+function askQuestion(kind,space,target,data){
+  const isLadder=(kind==='up');
+  const correctSet=new Set(isLadder?[data.correct]:data.correct);
+  let selected=new Set(), answered=false;
+
+  modal.className='modal '+kind;
+  modal.innerHTML=`
+    <div class="kind"><span class="ic">${isLadder?'🪜':'🛝'}</span>${isLadder?'Ladder · climb if you answer right':'Chute · pick both to keep your footing'}</div>
+    <h3>${data.q}</h3>
+    <p class="hint">${isLadder?'Choose the one best answer.':'Select the TWO correct actions.'}</p>
+    <div class="opts" id="opts"></div>
+    <div class="feedback" id="fb"></div>
+    <button class="btn" id="qBtn" disabled>Submit</button>`;
+  const optsEl=modal.querySelector('#opts'), fb=modal.querySelector('#fb'), qBtn=modal.querySelector('#qBtn');
+
+  data.opts.forEach((text,i)=>{
+    const row=document.createElement('div');
+    row.className='opt '+(isLadder?'radio':'check');
+    row.innerHTML=`<span class="mark"></span><span>${text}</span>`;
+    row.addEventListener('click',()=>{
+      if(answered) return;
+      if(isLadder){ selected=new Set([i]); }
+      else { if(selected.has(i)) selected.delete(i); else { if(selected.size>=2) return; selected.add(i); } }
+      [...optsEl.children].forEach((ch,j)=>{ ch.classList.toggle('sel',selected.has(j)); ch.querySelector('.mark').textContent=selected.has(j)?(isLadder?'●':'✓'):''; });
+      qBtn.disabled = isLadder ? selected.size!==1 : selected.size!==2;
+    });
+    optsEl.appendChild(row);
+  });
+
+  qBtn.addEventListener('click',()=>{
+    if(!answered){
+      answered=true;
+      const success = isLadder ? selected.has(data.correct)
+        : (selected.size===2 && [...selected].every(i=>correctSet.has(i)));
+      [...optsEl.children].forEach((ch,j)=>{
+        ch.classList.add('locked');
+        if(correctSet.has(j)){ ch.classList.add('correct'); ch.querySelector('.mark').textContent='✓'; }
+        else if(selected.has(j)){ ch.classList.add('wrong'); ch.querySelector('.mark').textContent='✗'; }
+      });
+      let outcome;
+      if(isLadder) outcome = success ? `Correct — climb up to space ${target}!` : `Not quite — you stay on this space.`;
+      else outcome = success ? `Right combo — you keep your footing and avoid the slide.` : `Missed — you slide down to space ${target}.`;
+      fb.className='feedback show '+(success?'good':'bad');
+      fb.innerHTML=`${outcome}<div class="why">${data.why}</div>`;
+      qBtn.textContent='Continue';
+      modal._success=success;
+    } else {
+      scrim.classList.remove('show');
+      const success=modal._success;
+      logQ(cur,kind,data,success);
+      if(isLadder){ if(success){ tweenMove(cur,space,target,finishTurn); } else finishTurn(); }
+      else { if(success){ finishTurn(); } else { tweenMove(cur,space,target,finishTurn); } }
+    }
+  });
+  scrim.classList.add('show');
+}
+
+/* ===================== WIN ===================== */
+function winGame(player){
+  modal.className='modal win up';
+  modal.innerHTML=`<div class="trophy">🏆</div><h3>${PNAME[player]} reaches space 50!</h3>
+    <p class="hint" style="margin-top:8px;">Use the discussion log to debrief every safety question the group hit.</p>
+    <button class="btn" id="winBtn">Play again</button>`;
+  modal.querySelector('#winBtn').addEventListener('click',()=>{ scrim.classList.remove('show'); resetGame(); });
+  scrim.classList.add('show');
+}
+
+/* ===================== SETUP / RESET ===================== */
+document.getElementById('pcount').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...document.querySelectorAll('#pcount button')].forEach(x=>x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true'); nPlayers=+b.dataset.n; resetGame();
+});
+document.getElementById('resetBtn').addEventListener('click',resetGame);
+
+function resetGame(){
+  pos=Array(nPlayers).fill(1); cur=0; busy=false; anim=null;
+  mustHit=Array(nPlayers).fill(false); turnHitFeature=false;
+  ladderBag=[]; chuteBag=[];
+  document.getElementById('spinBtn').disabled=false;
+  document.getElementById('spun').innerHTML="Spin to begin";
+  logList.innerHTML='<li class="empty">Each question answered shows up here for the debrief.</li>'; logHasItems=false;
+  setTurn(); drawBoard();
+}
+
+/* ===================== FACILITATOR KEY ===================== */
+function buildKey(){
+  const body=document.getElementById('keyBody'); body.innerHTML="";
+  body.insertAdjacentHTML('beforeend',`<div style="font-weight:800;color:var(--green);font-family:'Baloo 2';margin:2px 0 8px;">Ladder questions — choose the ONE best answer (${LADDER_Q.length})</div>`);
+  LADDER_Q.forEach(d=>body.insertAdjacentHTML('beforeend',
+    `<div class="keyitem"><div class="qh"><span class="pill up">LADDER</span>${d.q}</div><div class="ans">✓ ${d.opts[d.correct]}</div><div class="why">${d.why}</div></div>`));
+  body.insertAdjacentHTML('beforeend',`<div style="font-weight:800;color:var(--coral);font-family:'Baloo 2';margin:16px 0 8px;">Chute questions — choose BOTH correct actions (${CHUTE_Q.length})</div>`);
+  CHUTE_Q.forEach(d=>{ const ans=d.correct.map(i=>d.opts[i]).join("  ·  ");
+    body.insertAdjacentHTML('beforeend',
+      `<div class="keyitem"><div class="qh"><span class="pill down">CHUTE</span>${d.q}</div><div class="ans">✓ ${ans}</div><div class="why">${d.why}</div></div>`);
+  });
+}
+
+/* ===================== INIT ===================== */
+buildWheel(); buildKey(); resetGame();
+</script>
+</body>
+</html>

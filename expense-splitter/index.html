@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light" />
+<title>Expense Splitter</title>
+<style>
+  /* ============================================================
+     Tokens
+     ============================================================ */
+  :root{
+    --paper:#fbfbf9;         /* page */
+    --card:#ffffff;          /* raised surfaces */
+    --panel:#f4f4f0;         /* quiet inset panels */
+    --ink:#171a1f;           /* primary text */
+    --muted:#6a6f78;         /* secondary text */
+    --faint:#8b909a;         /* tertiary */
+    --line:#e6e6df;          /* hairlines */
+    --line-strong:#d7d7cf;
+
+    --green:#0f7a5b;         /* money / primary action */
+    --green-ink:#0b5c45;
+    --green-soft:#e5f2ec;    /* selected chip fill */
+    --green-line:#bfe0d3;
+
+    --amber:#b4770a;         /* tax & tip only */
+    --amber-soft:#fbf3e0;
+    --amber-line:#eeddb2;
+
+    --red:#c0392b;           /* destructive */
+    --red-soft:#fbecea;
+
+    --radius:16px;
+    --radius-sm:11px;
+    --radius-xs:8px;
+    --shadow:0 1px 2px rgba(20,24,31,.04), 0 6px 22px rgba(20,24,31,.055);
+    --shadow-sm:0 1px 2px rgba(20,24,31,.05);
+
+    --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji",sans-serif;
+
+    /* comfortable tap target that grows a little on small viewports */
+    --tap:clamp(2.25rem, 2rem + 1vw, 2.6rem);
+  }
+
+  /* ============================================================
+     Fluid base — one font-size ramp drives all rem spacing, so the
+     whole UI scales smoothly across viewport width AND browser zoom.
+     px+vw (not rem+vw) to keep the ramp unambiguous.
+     ============================================================ */
+  html{
+    font-size:clamp(15px, 14.15px + 0.28vw, 18px);
+    -webkit-text-size-adjust:100%;
+    box-sizing:border-box;
+  }
+  *,*::before,*::after{box-sizing:inherit;}
+
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* honor reduced-motion */
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  .wrap{
+    width:min(100%, 1080px);
+    margin-inline:auto;
+    padding:
+      clamp(1.1rem, 0.6rem + 2.6vw, 2.4rem)
+      clamp(0.85rem, 0.4rem + 2.4vw, 2rem)
+      max(4rem, env(safe-area-inset-bottom));
+  }
+
+  /* mono figures line up like a receipt */
+  .num{ font-family:var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+
+  /* ============================================================
+     Header
+     ============================================================ */
+  header.masthead{
+    display:flex; align-items:center; gap:.8rem;
+    margin-bottom:clamp(1.3rem,0.9rem + 1.6vw,2rem);
+  }
+  .mark{
+    flex:0 0 auto;
+    width:clamp(2.6rem,2.2rem + 1.6vw,3.2rem);
+    height:clamp(2.6rem,2.2rem + 1.6vw,3.2rem);
+    border-radius:13px;
+    background:var(--green);
+    color:#fff;
+    display:grid; place-items:center;
+    box-shadow:0 4px 14px rgba(15,122,91,.28);
+  }
+  .mark svg{ width:58%; height:58%; }
+  .masthead h1{
+    margin:0;
+    font-size:clamp(1.35rem,1.1rem + 1.3vw,1.9rem);
+    letter-spacing:-.02em;
+    line-height:1.05;
+  }
+  .masthead p{
+    margin:.15rem 0 0;
+    color:var(--muted);
+    font-size:clamp(.82rem,.78rem + .2vw,.95rem);
+  }
+
+  /* ============================================================
+     Section shell
+     ============================================================ */
+  section.card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:clamp(1rem,0.7rem + 1.3vw,1.6rem);
+    margin-bottom:clamp(1rem,0.7rem + 1.2vw,1.5rem);
+  }
+  .section-head{
+    display:flex; align-items:center; gap:.55rem;
+    margin:0 0 clamp(.7rem,.5rem + .6vw,1rem);
+  }
+  .section-head .ico{
+    display:grid; place-items:center;
+    width:1.6rem; height:1.6rem;
+    color:var(--green);
+    flex:0 0 auto;
+  }
+  .section-head .ico svg{ width:1.15rem; height:1.15rem; }
+  .section-head h2{
+    margin:0;
+    font-size:clamp(.95rem,.88rem + .35vw,1.15rem);
+    letter-spacing:-.01em;
+  }
+  .section-head .eyebrow{
+    margin-left:auto;
+    font-size:.72rem; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--faint); font-weight:600;
+  }
+
+  /* ============================================================
+     People chips
+     ============================================================ */
+  .chips{ display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.9rem; }
+  .chips:empty{ margin:0; }
+  .chip{
+    display:inline-flex; align-items:center; gap:.4rem;
+    background:var(--panel);
+    border:1px solid var(--line-strong);
+    color:var(--ink);
+    padding:.4rem .5rem .4rem .8rem;
+    border-radius:999px;
+    font-size:.9rem; font-weight:500;
+    max-width:100%;
+  }
+  .chip .name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chip button{
+    flex:0 0 auto;
+    width:1.4rem; height:1.4rem;
+    display:grid; place-items:center;
+    border:none; border-radius:999px;
+    background:transparent; color:var(--muted);
+    cursor:pointer;
+  }
+  .chip button:hover{ background:var(--red-soft); color:var(--red); }
+  .chip button svg{ width:.85rem; height:.85rem; }
+
+  .empty-hint{
+    color:var(--faint);
+    font-size:.9rem;
+    padding:.1rem 0;
+  }
+
+  /* input rows */
+  .add-row{ display:flex; gap:.6rem; flex-wrap:wrap; }
+  .add-row .field{ flex:1 1 12rem; min-width:0; }
+
+  input[type="text"], input[type="number"]{
+    width:100%;
+    font-family:var(--sans);
+    font-size:max(16px, 1rem);   /* >=16px dodges iOS focus-zoom */
+    color:var(--ink);
+    background:var(--card);
+    border:1px solid var(--line-strong);
+    border-radius:var(--radius-xs);
+    padding:.6rem .75rem;
+    min-height:var(--tap);
+    -webkit-appearance:none; appearance:none;
+    transition:border-color .12s, box-shadow .12s;
+  }
+  input::placeholder{ color:var(--faint); }
+  input:focus-visible{
+    outline:none;
+    border-color:var(--green);
+    box-shadow:0 0 0 3px rgba(15,122,91,.16);
+  }
+
+  /* buttons */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+    font-family:var(--sans); font-size:.92rem; font-weight:600;
+    padding:.6rem 1rem; min-height:var(--tap);
+    border-radius:var(--radius-xs); border:1px solid transparent;
+    cursor:pointer; white-space:nowrap;
+    transition:background .12s, transform .04s, box-shadow .12s;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn svg{ width:1rem; height:1rem; }
+  .btn-primary{ background:var(--green); color:#fff; box-shadow:var(--shadow-sm); }
+  .btn-primary:hover{ background:var(--green-ink); }
+  .btn:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(15,122,91,.3); }
+
+  /* icon-only ghost button (row delete / add) */
+  .icon-btn{
+    width:var(--tap); height:var(--tap);
+    display:inline-grid; place-items:center;
+    border:1px solid transparent; border-radius:var(--radius-xs);
+    background:transparent; color:var(--muted); cursor:pointer;
+    transition:background .12s, color .12s, border-color .12s;
+  }
+  .icon-btn svg{ width:1.05rem; height:1.05rem; }
+  .icon-btn.danger:hover{ background:var(--red-soft); color:var(--red); }
+  .icon-btn.go{ color:var(--green); }
+  .icon-btn.go:hover{ background:var(--green-soft); }
+  .icon-btn:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(15,122,91,.28); }
+
+  /* ============================================================
+     Expenses table  (horizontal scroll + sticky Item column)
+     ============================================================ */
+  .table-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    background:var(--card);
+    scrollbar-width:thin;
+  }
+  table.exp{
+    border-collapse:separate;
+    border-spacing:0;
+    width:100%;
+    min-width:max-content;      /* let it grow so columns never crush */
+    font-size:.92rem;
+  }
+  .exp th, .exp td{
+    padding:.62rem .7rem;
+    border-bottom:1px solid var(--line);
+    border-right:1px solid var(--line);
+    text-align:center;
+    white-space:nowrap;
+  }
+  .exp tr td:last-child, .exp tr th:last-child{ border-right:none; }
+  .exp tbody tr:last-child td{ border-bottom:none; }
+
+  .exp thead th{
+    background:var(--panel);
+    color:var(--muted);
+    font-weight:600; font-size:.78rem;
+    letter-spacing:.03em; text-transform:uppercase;
+    position:sticky; top:0; z-index:2;
+  }
+  .col-item{ text-align:left !important; }
+  .col-amt{ text-align:right !important; }
+
+  /* sticky first column keeps the item label visible while scrolling */
+  .exp .col-item{
+    position:sticky; left:0; z-index:3;
+    background:var(--card);
+    min-width:9rem; max-width:16rem;
+  }
+  .exp thead .col-item{ z-index:4; background:var(--panel); }
+  .exp td.col-item .item-name{
+    display:block; overflow:hidden; text-overflow:ellipsis;
+    font-weight:500; text-align:left;
+  }
+  .exp .addrow td{ background:var(--amber-soft); }
+  .exp .addrow td.col-item{ background:var(--amber-soft); }
+  .exp .addrow input{ background:#fff; }
+
+  .amt{ font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  /* the per-person assignment toggle */
+  .assign{
+    width:1.9rem; height:1.9rem; margin-inline:auto;
+    display:grid; place-items:center;
+    border-radius:var(--radius-xs);
+    border:1px solid var(--line-strong);
+    background:var(--card);
+    color:transparent;
+    cursor:pointer;
+    transition:background .12s, border-color .12s, color .12s, transform .04s;
+  }
+  .assign:hover{ border-color:var(--green-line); background:var(--green-soft); }
+  .assign:active{ transform:scale(.94); }
+  .assign[aria-pressed="true"]{
+    background:var(--green); border-color:var(--green); color:#fff;
+  }
+  .assign svg{ width:1rem; height:1rem; }
+  .assign:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(15,122,91,.3); }
+
+  /* both inputs fill their cells so Item ≈ Amount, like the reference */
+  .col-amt-input{ text-align:right; min-width:5rem; }
+  .col-item-input{ min-width:7rem; }
+
+  .table-empty{
+    padding:1.5rem 1rem; text-align:center; color:var(--faint);
+    border-bottom:1px solid var(--line);
+  }
+  .scroll-note{
+    display:none;
+    margin:.55rem .1rem 0; font-size:.78rem; color:var(--faint);
+  }
+
+  /* ============================================================
+     Tax & tip
+     ============================================================ */
+  .tax-card{ border-color:var(--amber-line); background:var(--amber-soft); }
+  .tax-card .section-head .ico{ color:var(--amber); }
+  .tax-row{ display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+  .tax-row label{ font-weight:600; font-size:.92rem; }
+  .tax-row .field{ flex:1 1 14rem; min-width:0; max-width:22rem; }
+  .tax-row input{ border-color:var(--amber-line); }
+  .tax-row input:focus-visible{
+    border-color:var(--amber); box-shadow:0 0 0 3px rgba(180,119,10,.16);
+  }
+  .tax-eq{
+    display:inline-flex; align-items:baseline; gap:.3rem;
+    color:var(--amber); font-weight:600; white-space:nowrap;
+  }
+  .tax-eq .num{ font-size:1.05rem; }
+  .tax-help{ margin:.55rem 0 0; font-size:.8rem; color:var(--muted); }
+  .tax-help code{
+    font-family:var(--mono); background:#fff;
+    border:1px solid var(--amber-line); border-radius:5px;
+    padding:.05rem .35rem; font-size:.85em;
+  }
+
+  /* ============================================================
+     Final totals — receipt cards, the signature moment
+     ============================================================ */
+  .totals-card{ background:linear-gradient(180deg,#fff, #fcfcfa); }
+  .totals-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(clamp(9rem, 26vw, 11rem), 1fr));
+    gap:clamp(.6rem,.4rem + .6vw,.9rem);
+  }
+  .person-total{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line-strong);
+    border-radius:var(--radius-sm);
+    padding:.9rem 1rem 1rem;
+    box-shadow:var(--shadow-sm);
+    overflow:hidden;
+  }
+  .person-total::before{  /* perforated receipt top edge */
+    content:""; position:absolute; inset:0 0 auto 0; height:4px;
+    background:
+      radial-gradient(circle at 5px 4px, transparent 3px, var(--green) 3.4px) 0 0/10px 8px repeat-x;
+    opacity:.9;
+  }
+  .person-total .pt-name{
+    font-size:.82rem; font-weight:600; color:var(--muted);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    margin-bottom:.35rem;
+  }
+  .person-total .pt-amount{
+    font-family:var(--mono); font-variant-numeric:tabular-nums;
+    font-size:clamp(1.35rem,1.15rem + 1vw,1.75rem);
+    font-weight:600; color:var(--green-ink); letter-spacing:-.02em;
+    line-height:1;
+  }
+  .person-total .pt-break{
+    margin-top:.55rem; font-size:.75rem; color:var(--faint);
+    display:flex; flex-direction:column; gap:.1rem;
+  }
+  .person-total .pt-break span{ display:flex; justify-content:space-between; gap:.5rem; }
+  .person-total .pt-break .num{ font-size:.78rem; color:var(--muted); }
+
+  .grand{
+    margin-top:clamp(1rem,.7rem + 1vw,1.4rem);
+    padding-top:clamp(.9rem,.6rem + .8vw,1.2rem);
+    border-top:1px dashed var(--line-strong);
+    display:flex; align-items:baseline; justify-content:space-between;
+    flex-wrap:wrap; gap:.4rem .8rem;
+  }
+  .grand .g-label{ font-weight:600; color:var(--muted); font-size:.9rem; }
+  .grand .g-amount{
+    font-family:var(--mono); font-variant-numeric:tabular-nums;
+    font-size:clamp(1.15rem,1rem + .8vw,1.5rem); font-weight:600;
+    letter-spacing:-.02em;
+  }
+
+  .totals-empty{
+    text-align:center; color:var(--faint); padding:1.4rem .5rem;
+    font-size:.92rem;
+  }
+
+  /* very small screens: relax card padding a touch */
+  @media (max-width:400px){
+    section.card{ border-radius:13px; }
+    .add-row .btn{ flex:1 1 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mark" aria-hidden="true">
+      <!-- receipt -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1z"/>
+        <path d="M9 8h6M9 12h6"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Expense Splitter</h1>
+      <p>Split a bill fairly — assign each item, spread tax &amp; tip by share.</p>
+    </div>
+  </header>
+
+  <!-- PEOPLE -->
+  <section class="card" aria-labelledby="people-h">
+    <div class="section-head">
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </span>
+      <h2 id="people-h">People</h2>
+      <span class="eyebrow" id="people-count">0 people</span>
+    </div>
+
+    <div class="chips" id="peopleChips"></div>
+
+    <div class="add-row">
+      <div class="field">
+        <input id="personInput" type="text" placeholder="Add a person…" autocomplete="off"
+               aria-label="New person's name" maxlength="40" />
+      </div>
+      <button class="btn btn-primary" id="addPersonBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add person
+      </button>
+    </div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section class="card" aria-labelledby="exp-h">
+    <div class="section-head">
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v16"/>
+        </svg>
+      </span>
+      <h2 id="exp-h">Items</h2>
+      <span class="eyebrow">tap a cell to assign</span>
+    </div>
+
+    <div class="table-scroll" id="expensesWrap"></div>
+    <p class="scroll-note" id="scrollNote">Scroll sideways to reach every person →</p>
+  </section>
+
+  <!-- TAX & TIP -->
+  <section class="card tax-card" aria-labelledby="tax-h">
+    <div class="section-head">
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </span>
+      <h2 id="tax-h">Tax &amp; Tip</h2>
+    </div>
+    <div class="tax-row">
+      <label for="taxInput">Total tax / tip / fees</label>
+      <div class="field">
+        <input id="taxInput" type="text" inputmode="decimal" autocomplete="off"
+               placeholder="e.g. 15.74 + 11.10 + 18" value="0"
+               aria-label="Total tax, tip and fees (math allowed)" />
+      </div>
+      <span class="tax-eq">= <span class="num" id="taxValue">$0.00</span></span>
+    </div>
+    <p class="tax-help">Type a number, or add them up inline — <code>15.74+11.1+18</code>. Split across people in proportion to what each ordered.</p>
+  </section>
+
+  <!-- TOTALS -->
+  <section class="card totals-card" aria-labelledby="tot-h">
+    <div class="section-head">
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1z"/><path d="M9 12h6M9 16h4"/>
+        </svg>
+      </span>
+      <h2 id="tot-h">What each person owes</h2>
+    </div>
+    <div id="totalsRegion"></div>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+(function(){
+  /* ----------------------------------------------------------
+     State  (mirrors the original React component 1:1)
+     ---------------------------------------------------------- */
+  var state = {
+    people: [],           // ["Alex", ...]
+    expenses: [],         // [{id, item, amount, assignedTo:[names]}]
+    taxStr: "0",
+    taxValue: 0,
+    newItem: "",
+    newAmount: "",
+    newAssignedTo: []     // names selected for the not-yet-added expense
+  };
+
+  /* ----------------------------------------------------------
+     Tiny SVG helpers (no icon library needed)
+     ---------------------------------------------------------- */
+  var SVG = {
+    minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+    plus:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>'
+  };
+
+  /* ----------------------------------------------------------
+     Utilities
+     ---------------------------------------------------------- */
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function money(n){
+    if (!isFinite(n)) n = 0;
+    return "$" + n.toFixed(2);
+  }
+
+  /* Safe-ish arithmetic evaluator — matches the original behaviour:
+     only digits and + - * / . ( ) are allowed. */
+  function evalTax(raw){
+    if (raw == null) return 0;
+    var s = String(raw).replace(/\s/g, "");
+    if (s === "") return 0;
+    if (/^[0-9+\-*/.()]+$/.test(s)){
+      try{
+        var r = Function('"use strict"; return (' + s + ')')();
+        if (typeof r === "number" && isFinite(r)) return r;
+      }catch(e){ /* fall through */ }
+    }
+    var n = parseFloat(raw);
+    return isNaN(n) ? 0 : n;
+  }
+
+  /* ----------------------------------------------------------
+     Core math — each assignee pays an equal share of an item;
+     tax & tip are distributed by each person's share of subtotal.
+     ---------------------------------------------------------- */
+  function computeTotals(){
+    var subtotals = {}, taxShare = {}, totals = {};
+    state.people.forEach(function(p){ subtotals[p] = 0; });
+
+    state.expenses.forEach(function(e){
+      var n = e.assignedTo.length;
+      if (n === 0) return;
+      var per = e.amount / n;
+      e.assignedTo.forEach(function(p){
+        if (subtotals.hasOwnProperty(p)) subtotals[p] += per;
+      });
+    });
+
+    var totalSubtotal = 0;
+    state.people.forEach(function(p){ totalSubtotal += subtotals[p]; });
+
+    state.people.forEach(function(p){
+      taxShare[p] = totalSubtotal > 0 ? (subtotals[p] / totalSubtotal) * state.taxValue : 0;
+      totals[p] = subtotals[p] + taxShare[p];
+    });
+
+    return { subtotals:subtotals, taxShare:taxShare, totals:totals, totalSubtotal:totalSubtotal };
+  }
+
+  /* ----------------------------------------------------------
+     DOM refs
+     ---------------------------------------------------------- */
+  var peopleChips = document.getElementById("peopleChips");
+  var peopleCount = document.getElementById("people-count");
+  var personInput = document.getElementById("personInput");
+  var addPersonBtn = document.getElementById("addPersonBtn");
+  var expensesWrap = document.getElementById("expensesWrap");
+  var scrollNote   = document.getElementById("scrollNote");
+  var taxInput     = document.getElementById("taxInput");
+  var taxValueEl   = document.getElementById("taxValue");
+  var totalsRegion = document.getElementById("totalsRegion");
+
+  /* ==========================================================
+     RENDER: people chips
+     ========================================================== */
+  function renderPeople(){
+    var n = state.people.length;
+    peopleCount.textContent = n + (n === 1 ? " person" : " people");
+
+    if (n === 0){
+      peopleChips.innerHTML = '<span class="empty-hint">No one yet — add the people splitting this bill.</span>';
+      return;
+    }
+    peopleChips.innerHTML = state.people.map(function(p){
+      return '<span class="chip"><span class="name">' + esc(p) + '</span>' +
+             '<button type="button" data-remove-person="' + esc(p) + '" ' +
+             'aria-label="Remove ' + esc(p) + '">' + SVG.minus + '</button></span>';
+    }).join("");
+  }
+
+  /* ==========================================================
+     RENDER: expenses table (+ inline add row)
+     Values for the add-row inputs come from state, so a full
+     re-render (on people/expense changes) never loses typed text.
+     ========================================================== */
+  function renderExpenses(){
+    var people = state.people;
+
+    var head = '<thead><tr>' +
+      '<th class="col-item">Item</th>' +
+      '<th class="col-amt">Amount</th>' +
+      people.map(function(p){ return '<th title="' + esc(p) + '">' + esc(p) + '</th>'; }).join("") +
+      '<th aria-label="Actions"></th>' +
+    '</tr></thead>';
+
+    var rows = state.expenses.map(function(e){
+      var cells = people.map(function(p){
+        var on = e.assignedTo.indexOf(p) !== -1;
+        return '<td><button type="button" class="assign" aria-pressed="' + on + '" ' +
+               'data-toggle-exp="' + e.id + '" data-person="' + esc(p) + '" ' +
+               'aria-label="' + (on ? "Unassign " : "Assign ") + esc(p) + ' from ' + esc(e.item) + '">' +
+               SVG.check + '</button></td>';
+      }).join("");
+      return '<tr>' +
+        '<td class="col-item"><span class="item-name" title="' + esc(e.item) + '">' + esc(e.item) + '</span></td>' +
+        '<td class="col-amt amt">' + money(e.amount) + '</td>' +
+        cells +
+        '<td><button type="button" class="icon-btn danger" data-remove-exp="' + e.id + '" ' +
+        'aria-label="Delete ' + esc(e.item) + '">' + SVG.trash + '</button></td>' +
+      '</tr>';
+    }).join("");
+
+    if (state.expenses.length === 0){
+      var span = people.length + 3;
+      rows = '<tr><td class="table-empty" colspan="' + span + '">No items yet. Add your first one below.</td></tr>';
+    }
+
+    // inline "add expense" row
+    var newCells = people.map(function(p){
+      var on = state.newAssignedTo.indexOf(p) !== -1;
+      return '<td><button type="button" class="assign" aria-pressed="' + on + '" ' +
+             'data-toggle-new="' + esc(p) + '" aria-label="Assign ' + esc(p) + ' to the new item">' +
+             SVG.check + '</button></td>';
+    }).join("");
+
+    var addRow = '<tr class="addrow">' +
+      '<td class="col-item"><input class="col-item-input" type="text" data-new-item ' +
+        'placeholder="New item…" autocomplete="off" maxlength="60" value="' + esc(state.newItem) + '" aria-label="New item name"></td>' +
+      '<td class="col-amt"><input class="col-amt-input" type="number" step="0.01" min="0" inputmode="decimal" ' +
+        'data-new-amount placeholder="0.00" value="' + esc(state.newAmount) + '" aria-label="New item amount"></td>' +
+      newCells +
+      '<td><button type="button" class="icon-btn go" data-add-exp aria-label="Add this item">' + SVG.plus + '</button></td>' +
+    '</tr>';
+
+    expensesWrap.innerHTML = '<table class="exp">' + head + '<tbody>' + rows + addRow + '</tbody></table>';
+
+    // show the "scroll sideways" hint only when the table actually overflows
+    updateScrollNote();
+  }
+
+  function updateScrollNote(){
+    var overflowing = expensesWrap.scrollWidth > expensesWrap.clientWidth + 2;
+    scrollNote.style.display = overflowing ? "block" : "none";
+  }
+
+  /* ==========================================================
+     RENDER: tax value display
+     ========================================================== */
+  function renderTaxValue(){
+    taxValueEl.textContent = money(state.taxValue);
+  }
+
+  /* ==========================================================
+     RENDER: totals
+     ========================================================== */
+  function renderTotals(){
+    var r = computeTotals();
+
+    if (state.people.length === 0){
+      totalsRegion.innerHTML = '<p class="totals-empty">Add people and items to see who owes what.</p>';
+      return;
+    }
+
+    var cards = state.people.map(function(p){
+      return '<div class="person-total">' +
+        '<div class="pt-name" title="' + esc(p) + '">' + esc(p) + '</div>' +
+        '<div class="pt-amount">' + money(r.totals[p]) + '</div>' +
+        '<div class="pt-break">' +
+          '<span>Items <span class="num">' + money(r.subtotals[p]) + '</span></span>' +
+          '<span>Tax &amp; tip <span class="num">' + money(r.taxShare[p]) + '</span></span>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+
+    var grand = r.totalSubtotal + state.taxValue;
+    totalsRegion.innerHTML =
+      '<div class="totals-grid">' + cards + '</div>' +
+      '<div class="grand"><span class="g-label">Total bill</span>' +
+      '<span class="g-amount">' + money(grand) + '</span></div>';
+  }
+
+  /* ==========================================================
+     ACTIONS
+     ========================================================== */
+  function addPerson(){
+    var name = personInput.value.trim();
+    if (!name) return;
+    if (state.people.indexOf(name) !== -1){
+      // gentle nudge for duplicates
+      personInput.focus();
+      personInput.select();
+      return;
+    }
+    state.people.push(name);
+    personInput.value = "";
+    personInput.focus();
+    renderPeople();
+    renderExpenses();
+    renderTotals();
+  }
+
+  function removePerson(name){
+    state.people = state.people.filter(function(p){ return p !== name; });
+    state.expenses.forEach(function(e){
+      e.assignedTo = e.assignedTo.filter(function(p){ return p !== name; });
+    });
+    state.newAssignedTo = state.newAssignedTo.filter(function(p){ return p !== name; });
+    renderPeople();
+    renderExpenses();
+    renderTotals();
+  }
+
+  function addExpense(){
+    var item = state.newItem.trim();
+    var amount = parseFloat(state.newAmount);
+    if (!item || !state.newAmount || isNaN(amount) || state.newAssignedTo.length === 0) return;
+
+    state.expenses.push({
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      item: item,
+      amount: amount,
+      assignedTo: state.newAssignedTo.slice()
+    });
+    state.newItem = "";
+    state.newAmount = "";
+    state.newAssignedTo = [];
+    renderExpenses();
+    renderTotals();
+
+    // put the cursor back on the item field for fast entry
+    var next = expensesWrap.querySelector("[data-new-item]");
+    if (next) next.focus();
+  }
+
+  function removeExpense(id){
+    state.expenses = state.expenses.filter(function(e){ return String(e.id) !== String(id); });
+    renderExpenses();
+    renderTotals();
+  }
+
+  function toggleExisting(id, person){
+    var e = state.expenses.filter(function(x){ return String(x.id) === String(id); })[0];
+    if (!e) return;
+    var i = e.assignedTo.indexOf(person);
+    if (i === -1) e.assignedTo.push(person);
+    else e.assignedTo.splice(i, 1);
+    renderExpenses();
+    renderTotals();
+  }
+
+  /* Toggling a chip on the not-yet-added item must NOT re-render the
+     table (that would blur the item/amount inputs). Update in place. */
+  function toggleNew(person, btn){
+    var i = state.newAssignedTo.indexOf(person);
+    if (i === -1) state.newAssignedTo.push(person);
+    else state.newAssignedTo.splice(i, 1);
+    if (btn) btn.setAttribute("aria-pressed", i === -1 ? "true" : "false");
+  }
+
+  /* ==========================================================
+     EVENT WIRING
+     ========================================================== */
+  addPersonBtn.addEventListener("click", addPerson);
+  personInput.addEventListener("keydown", function(ev){
+    if (ev.key === "Enter"){ ev.preventDefault(); addPerson(); }
+  });
+
+  peopleChips.addEventListener("click", function(ev){
+    var b = ev.target.closest("[data-remove-person]");
+    if (b) removePerson(b.getAttribute("data-remove-person"));
+  });
+
+  // delegation on the persistent wrapper survives innerHTML swaps
+  expensesWrap.addEventListener("click", function(ev){
+    var t;
+    if ((t = ev.target.closest("[data-toggle-exp]")))
+      return toggleExisting(t.getAttribute("data-toggle-exp"), t.getAttribute("data-person"));
+    if ((t = ev.target.closest("[data-toggle-new]")))
+      return toggleNew(t.getAttribute("data-toggle-new"), t);
+    if ((t = ev.target.closest("[data-remove-exp]")))
+      return removeExpense(t.getAttribute("data-remove-exp"));
+    if ((t = ev.target.closest("[data-add-exp]")))
+      return addExpense();
+  });
+
+  // keep add-row text in state WITHOUT re-rendering (preserves focus)
+  expensesWrap.addEventListener("input", function(ev){
+    if (ev.target.matches("[data-new-item]"))   state.newItem = ev.target.value;
+    if (ev.target.matches("[data-new-amount]")) state.newAmount = ev.target.value;
+  });
+  expensesWrap.addEventListener("keydown", function(ev){
+    if (ev.key === "Enter" && (ev.target.matches("[data-new-item]") || ev.target.matches("[data-new-amount]"))){
+      ev.preventDefault(); addExpense();
+    }
+  });
+
+  taxInput.addEventListener("input", function(ev){
+    state.taxStr = ev.target.value;
+    state.taxValue = evalTax(ev.target.value);
+    renderTaxValue();
+    renderTotals();
+  });
+
+  // re-check the horizontal-scroll hint when the window changes size
+  var rt;
+  window.addEventListener("resize", function(){
+    clearTimeout(rt);
+    rt = setTimeout(updateScrollNote, 120);
+  });
+
+  /* ==========================================================
+     INITIAL PAINT
+     ========================================================== */
+  renderPeople();
+  renderExpenses();
+  renderTaxValue();
+  renderTotals();
+})();
+</script>
+</body>
+</html>
