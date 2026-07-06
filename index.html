@@ -42,7 +42,18 @@
   }
   .wordmark { font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
   .wordmark .dot { color: var(--blue); }
-  .topbar .meta { font-family: var(--mono); font-size: 12px; color: var(--faint); letter-spacing: 0.02em; }
+  .topbar { flex-wrap: wrap; gap: 10px 14px; }
+  .toplinks { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--ink); background: var(--card); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 14px;
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+  }
+  .pill svg { width: 15px; height: 15px; stroke: var(--blue); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .pill:hover { border-color: var(--blue); box-shadow: 0 4px 12px -6px rgba(24,95,165,.4); transform: translateY(-1px); }
+  .pill:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
   .hero { padding: clamp(44px, 8vw, 80px) 0 clamp(30px, 5vw, 48px); text-align: center; }
   h1 {
@@ -53,6 +64,9 @@
 
   .grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  }
+  @media (min-width: 700px) {
+    .grid { grid-template-columns: repeat(4, 1fr);
     gap: clamp(24px, 4vw, 36px) 12px; padding: clamp(16px, 3vw, 28px) 0 80px;
     justify-items: center;
   }
@@ -192,7 +206,16 @@
 
   <div class="topbar">
     <div class="wordmark">Jacob Swift<span class="dot">.</span></div>
-    <div class="meta">tools&nbsp;/&nbsp;index</div>
+    <div class="toplinks">
+      <a class="pill" href="https://jacobswift.myportfolio.com/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M14.5 5l1.2-2h-7.4l1.2 2H4.5A2 2 0 0 0 2.5 7v11a2 2 0 0 0 2 2h15a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-5z"/><circle cx="12" cy="12.5" r="3.6"/></svg>
+        View my portfolio
+      </a>
+      <a class="pill" href="https://www.youtube.com/@jacobswift" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="3.5"/><path d="M10 9.2l5 2.8-5 2.8V9.2z"/></svg>
+        View my channel
+      </a>
+    </div>
   </div>
 
   <header class="hero">
@@ -201,6 +224,21 @@
   </header>
 
   <main class="grid">
+
+    <a class="tool everyday" href="./expense-splitter/">
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 2.5h12V21l-2-1.4L14 21l-2-1.4L10 21l-2-1.4L6 21V2.5z"/><path d="M9 7.5h6M9 11h6M9 14.5h3.5"/></svg></span>
+      <h3>Expense Splitter</h3>
+    </a>
+
+    <a class="tool finance" href="./housing-cost-calculator/">
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 11L12 3.5 20.5 11"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg></span>
+      <h3>Housing Cost Calculator</h3>
+    </a>
+
+    <a class="tool everyday" href="https://huggingface.co/spaces/jacobswifty/convert" target="_blank" rel="noopener">
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21.5 4.5v5.2h-5.2"/><path d="M2.5 19.5v-5.2h5.2"/><path d="M20.6 9.7a8.6 8.6 0 0 0-14.5-4L2.5 9M3.4 14.3a8.6 8.6 0 0 0 14.5 4l3.6-3.3"/></svg></span>
+      <h3>File Converter<span class="ext"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg></span></h3>
+    </a>
 
     <a class="tool aviation" href="./narrowbody-layout-playground/">
       <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5c.8 0 1.3 1.2 1.3 2.8v3.4l8.2 4.6v2.2l-8.2-2.6v4.3l2.2 1.9v1.9L12 20l-3.5 1v-1.9l2.2-1.9v-4.3L2.5 15.5v-2.2l8.2-4.6V5.3c0-1.6.5-2.8 1.3-2.8z"/></svg></span>
@@ -212,29 +250,14 @@
       <h3>Region Divider &mdash; USA</h3>
     </a>
 
-    <a class="tool finance" href="./housing-cost-calculator/">
-      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 11L12 3.5 20.5 11"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg></span>
-      <h3>Housing Cost Calculator</h3>
-    </a>
-
     <a class="tool healthcare" href="./key-driver-diagram/">
       <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2.5" y="9" width="6" height="6" rx="1.2"/><rect x="15.5" y="3" width="6" height="6" rx="1.2"/><rect x="15.5" y="15" width="6" height="6" rx="1.2"/><path d="M8.5 12h3.5M12 12V6h3.5M12 12v6h3.5"/></svg></span>
       <h3>Key Driver Diagram Builder</h3>
     </a>
 
-    <a class="tool everyday" href="./expense-splitter/">
-      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 2.5h12V21l-2-1.4L14 21l-2-1.4L10 21l-2-1.4L6 21V2.5z"/><path d="M9 7.5h6M9 11h6M9 14.5h3.5"/></svg></span>
-      <h3>Expense Splitter</h3>
-    </a>
-
     <a class="tool healthcare" href="./safe-steps/">
       <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.8l7.5 3v5.4c0 4.6-3.1 7.9-7.5 9.8-4.4-1.9-7.5-5.2-7.5-9.8V5.8l7.5-3z"/><path d="M12 8.2v6M9 11.2h6"/></svg></span>
       <h3>Safe Steps</h3>
-    </a>
-
-    <a class="tool everyday" href="https://huggingface.co/spaces/jacobswifty/convert" target="_blank" rel="noopener">
-      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21.5 4.5v5.2h-5.2"/><path d="M2.5 19.5v-5.2h5.2"/><path d="M20.6 9.7a8.6 8.6 0 0 0-14.5-4L2.5 9M3.4 14.3a8.6 8.6 0 0 0 14.5 4l3.6-3.3"/></svg></span>
-      <h3>File Converter<span class="ext"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg></span></h3>
     </a>
 
   </main>
