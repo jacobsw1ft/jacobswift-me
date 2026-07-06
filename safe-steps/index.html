@@ -165,7 +165,7 @@
     <b>How to play:</b> On your turn, press Spin (1–10) and your token moves that many spaces — you can land anywhere.
     Land on the <b style="color:#2E9E6B">base of a ladder</b> and answer one question correctly to climb up.
     Land on the <b style="color:#E8654E">top of a chute</b> and you must pick <b>both</b> correct actions to keep your footing; miss and you slide down.
-    Overshoot 50 and you bounce back. First to land exactly on 50 wins.
+    Reach space 50 to win — first one there takes it.
   </div>
 
   <div class="grid2">
@@ -431,15 +431,18 @@ function shortTitle(d){ return d.q.length>60 ? d.q.slice(0,58)+"…" : d.q; }
 
 /* ===================== MOVEMENT ===================== */
 function buildPath(from,steps){
-  const path=[]; let p=from, dir=1, rem=steps;
-  while(rem>0){ let np=p+dir; if(np>N){dir=-1; np=p-1;} p=np; path.push(p); rem--; }
+  const path=[]; let p=from;
+  for(let i=0;i<steps;i++){ p++; if(p>=N){ path.push(N); return path; } path.push(p); }
   return path;
 }
 function pickForcedSpin(player){
-  const cands=[];
-  for(let s=1;s<=10;s++){ const path=buildPath(pos[player],s); const land=path[path.length-1];
-    if(LADDERS[land]||CHUTES[land]) cands.push(s); }
-  return cands.length ? cands[Math.floor(Math.random()*cands.length)] : null;
+  // let a player who can reach the finish win, rather than forcing them back onto a feature
+  for(let s=1;s<=10;s++){ if(pos[player]+s>=N) return s; }
+  const chutes=[], ladders=[];
+  for(let s=1;s<=10;s++){ const land=buildPath(pos[player],s).slice(-1)[0];
+    if(CHUTES[land]) chutes.push(s); else if(LADDERS[land]) ladders.push(s); }
+  const pool = chutes.length ? chutes : ladders;   // otherwise prefer a chute (risky) landing
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
 }
 function stepThrough(player,path,done){
   let i=0; const go=()=>{ if(i<path.length){ pos[player]=path[i]; drawTokens(); i++; setTimeout(go,110); } else done(); }; go();
