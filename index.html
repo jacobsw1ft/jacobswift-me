@@ -34,7 +34,7 @@
     -webkit-font-smoothing: antialiased;
   }
   a { color: inherit; text-decoration: none; }
-  .shell { max-width: 1080px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 48px); }
+  .shell { max-width: 880px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 48px); }
 
   .topbar {
     display: flex; align-items: center; justify-content: space-between;
@@ -44,72 +44,46 @@
   .wordmark .dot { color: var(--blue); }
   .topbar .meta { font-family: var(--mono); font-size: 12px; color: var(--faint); letter-spacing: 0.02em; }
 
-  .hero { padding: clamp(48px, 9vw, 96px) 0 clamp(36px, 6vw, 56px); }
-  .eyebrow {
-    font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em;
-    text-transform: uppercase; color: var(--blue); margin-bottom: 22px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .eyebrow::before {
-    content: ""; width: 26px; height: 1px; background: var(--blue); display: inline-block;
-  }
+  .hero { padding: clamp(44px, 8vw, 80px) 0 clamp(30px, 5vw, 48px); text-align: center; }
   h1 {
-    font-weight: 800; letter-spacing: -0.03em; line-height: 1.02;
-    font-size: clamp(2.3rem, 6.5vw, 4.1rem); margin: 0 0 22px; max-width: 16ch;
+    font-weight: 800; letter-spacing: -0.03em; line-height: 1.05;
+    font-size: clamp(2rem, 5.5vw, 3.2rem); margin: 0 0 14px;
   }
-  h1 .soft { color: var(--muted); font-weight: 500; }
-  .lede { font-size: clamp(1rem, 2.2vw, 1.2rem); color: var(--muted); max-width: 52ch; margin: 0; }
-
-  .strip {
-    display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 34px;
-    font-family: var(--mono); font-size: 12.5px; color: var(--muted);
-  }
-  .strip span { display: flex; align-items: center; gap: 8px; }
-  .strip span::before {
-    content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); display: inline-block;
-  }
-
-  .rail {
-    display: flex; align-items: baseline; justify-content: space-between;
-    border-top: 1px solid var(--line); padding-top: 16px; margin-bottom: 22px;
-  }
-  .rail h2 { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; margin: 0; }
-  .rail .count { font-family: var(--mono); font-size: 12px; color: var(--faint); }
+  .lede { font-size: clamp(0.98rem, 2vw, 1.1rem); color: var(--muted); max-width: 46ch; margin: 0 auto; }
 
   .grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px; padding-bottom: 72px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+    gap: clamp(24px, 4vw, 36px) 12px; padding: clamp(16px, 3vw, 28px) 0 80px;
+    justify-items: center;
   }
   .tool {
-    position: relative; background: var(--card); border: 1px solid var(--line);
-    border-radius: 12px; padding: 22px 22px 20px 26px; overflow: hidden;
-    display: flex; flex-direction: column; min-height: 188px;
-    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    gap: 12px; width: 100%; max-width: 160px; padding: 6px 4px; border-radius: 14px;
   }
-  .tool::before {
-    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-    background: var(--accent, var(--blue));
+  .tool .icon {
+    width: 74px; height: 74px; border-radius: 21px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--accent, var(--blue)) 9%, #ffffff);
+    border: 1px solid color-mix(in srgb, var(--accent, var(--blue)) 24%, var(--line));
+    box-shadow: 0 2px 6px -3px rgba(20,24,30,.12);
+    transition: transform .16s ease, box-shadow .16s ease;
   }
-  .tool:hover {
-    transform: translateY(-3px);
-    border-color: color-mix(in srgb, var(--accent, var(--blue)) 45%, var(--line));
-    box-shadow: 0 12px 28px -14px rgba(20,24,30,.24);
+  .tool .icon svg {
+    width: 32px; height: 32px; stroke: var(--accent, var(--blue));
+    stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round;
   }
-  .tool:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-  .tool .code {
-    font-family: var(--mono); font-size: 12px; color: var(--faint); letter-spacing: 0.04em;
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  .tool:hover .icon {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 22px -10px color-mix(in srgb, var(--accent, var(--blue)) 55%, transparent);
   }
-  .tag { display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
-  .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent, var(--blue)); }
-  .tool h3 { font-size: 1.22rem; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 8px; }
-  .tool p { font-size: 0.92rem; color: var(--muted); margin: 0; }
-  .tool .open {
-    margin-top: auto; padding-top: 16px; font-family: var(--mono); font-size: 12.5px;
-    color: var(--accent, var(--blue)); font-weight: 700; display: flex; align-items: center; gap: 7px;
+  .tool:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .tool h3 {
+    font-size: 0.92rem; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0; line-height: 1.3;
   }
-  .tool .open .arw { transition: transform .18s ease; }
-  .tool:hover .open .arw { transform: translateX(4px); }
+  .tool h3 .ext {
+    display: inline-block; width: 11px; height: 11px; margin-left: 3px; vertical-align: baseline;
+  }
+  .tool h3 .ext svg { width: 11px; height: 11px; stroke: var(--faint); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
   .tool.aviation   { --accent: var(--blue); }
   .tool.finance    { --accent: var(--teal); }
@@ -127,13 +101,14 @@
   .anim { opacity: 0; animation: rise .5s ease forwards; }
   .hero .anim { animation-delay: .05s; }
   .grid .tool { opacity: 0; animation: rise .5s ease forwards; }
-  .grid .tool:nth-child(1){animation-delay:.08s}.grid .tool:nth-child(2){animation-delay:.13s}
-  .grid .tool:nth-child(3){animation-delay:.18s}.grid .tool:nth-child(4){animation-delay:.23s}
-  .grid .tool:nth-child(5){animation-delay:.28s}.grid .tool:nth-child(6){animation-delay:.33s}
+  .grid .tool:nth-child(1){animation-delay:.06s}.grid .tool:nth-child(2){animation-delay:.10s}
+  .grid .tool:nth-child(3){animation-delay:.14s}.grid .tool:nth-child(4){animation-delay:.18s}
+  .grid .tool:nth-child(5){animation-delay:.22s}.grid .tool:nth-child(6){animation-delay:.26s}
+  .grid .tool:nth-child(7){animation-delay:.30s}
 
   @media (prefers-reduced-motion: reduce) {
     .anim, .grid .tool { animation: none; opacity: 1; }
-    .tool, .tool .open .arw { transition: none; }
+    .tool .icon { transition: none; }
   }
 
   /* ============================================================
@@ -221,63 +196,45 @@
   </div>
 
   <header class="hero">
-    <div class="eyebrow anim">The workbench</div>
-    <h1 class="anim">Small tools, each built to answer <span class="soft">one question well.</span></h1>
-    <p class="lede anim">Interactive calculators, models, and builders I've made &mdash; some for aviation, some for work, some for everyday decisions. No sign-in, nothing to install. Pick one and start.</p>
-    <div class="strip anim">
-      <span id="toolCount">6 tools</span>
-      <span>runs in your browser</span>
-      <span>no accounts, no tracking</span>
-    </div>
+    <h1 class="anim">Small tools, purpose&nbsp;built.</h1>
+    <p class="lede anim">Free interactive tools that run right in your browser &mdash; no sign-in, nothing to install.</p>
   </header>
-
-  <div class="rail">
-    <h2>All tools</h2>
-    <span class="count" id="railCount">06 / index</span>
-  </div>
 
   <main class="grid">
 
     <a class="tool aviation" href="./narrowbody-layout-playground/">
-      <div class="code"><span class="tag">Aviation</span><span>N01</span></div>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5c.8 0 1.3 1.2 1.3 2.8v3.4l8.2 4.6v2.2l-8.2-2.6v4.3l2.2 1.9v1.9L12 20l-3.5 1v-1.9l2.2-1.9v-4.3L2.5 15.5v-2.2l8.2-4.6V5.3c0-1.6.5-2.8 1.3-2.8z"/></svg></span>
       <h3>Narrowbody Layout Playground</h3>
-      <p>Model seat counts across single-aisle jets. Adjust pitch and premium rows, then compare against real airline configurations.</p>
-      <div class="open">Open tool <span class="arw">&rarr;</span></div>
     </a>
 
     <a class="tool mapping" href="./region-divider-usa/">
-      <div class="code"><span class="tag">Mapping</span><span>N02</span></div>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4L3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/><path d="M9 4v13M15 6.5v13" stroke-dasharray="2.6 2.6"/></svg></span>
       <h3>Region Divider &mdash; USA</h3>
-      <p>Draw custom boundaries across the US map to carve states into your own regions for route and profitability analysis.</p>
-      <div class="open">Open tool <span class="arw">&rarr;</span></div>
     </a>
 
     <a class="tool finance" href="./housing-cost-calculator/">
-      <div class="code"><span class="tag">Finance</span><span>N03</span></div>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 11L12 3.5 20.5 11"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg></span>
       <h3>Housing Cost Calculator</h3>
-      <p>Break down the true monthly cost of a home over five years &mdash; mortgage, taxes, HOA, maintenance, and the equity you build.</p>
-      <div class="open">Open tool <span class="arw">&rarr;</span></div>
     </a>
 
     <a class="tool healthcare" href="./key-driver-diagram/">
-      <div class="code"><span class="tag">Healthcare QI</span><span>N04</span></div>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2.5" y="9" width="6" height="6" rx="1.2"/><rect x="15.5" y="3" width="6" height="6" rx="1.2"/><rect x="15.5" y="15" width="6" height="6" rx="1.2"/><path d="M8.5 12h3.5M12 12V6h3.5M12 12v6h3.5"/></svg></span>
       <h3>Key Driver Diagram Builder</h3>
-      <p>Build a quality-improvement driver diagram &mdash; aim, primary and secondary drivers, change ideas &mdash; and export it as a crisp PNG.</p>
-      <div class="open">Open tool <span class="arw">&rarr;</span></div>
     </a>
 
     <a class="tool everyday" href="./expense-splitter/">
-      <div class="code"><span class="tag">Everyday</span><span>N05</span></div>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 2.5h12V21l-2-1.4L14 21l-2-1.4L10 21l-2-1.4L6 21V2.5z"/><path d="M9 7.5h6M9 11h6M9 14.5h3.5"/></svg></span>
       <h3>Expense Splitter</h3>
-      <p>Split a bill fairly across a group &mdash; assign each item to who had it, then spread tax and tip by share to see exactly who owes what.</p>
-      <div class="open">Open tool <span class="arw">&rarr;</span></div>
     </a>
 
     <a class="tool healthcare" href="./safe-steps/">
-      <div class="code"><span class="tag">Healthcare</span><span>N06</span></div>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.8l7.5 3v5.4c0 4.6-3.1 7.9-7.5 9.8-4.4-1.9-7.5-5.2-7.5-9.8V5.8l7.5-3z"/><path d="M12 8.2v6M9 11.2h6"/></svg></span>
       <h3>Safe Steps</h3>
-      <p>A chutes-and-ladders training game for pediatric safety. Spin, move, and answer safety questions to climb &mdash; with a facilitator debrief log.</p>
-      <div class="open">Open tool <span class="arw">&rarr;</span></div>
+    </a>
+
+    <a class="tool everyday" href="https://huggingface.co/spaces/jacobswifty/convert" target="_blank" rel="noopener">
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21.5 4.5v5.2h-5.2"/><path d="M2.5 19.5v-5.2h5.2"/><path d="M20.6 9.7a8.6 8.6 0 0 0-14.5-4L2.5 9M3.4 14.3a8.6 8.6 0 0 0 14.5 4l3.6-3.3"/></svg></span>
+      <h3>File Converter<span class="ext"><svg viewBox="0 0 24 24"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg></span></h3>
     </a>
 
   </main>
