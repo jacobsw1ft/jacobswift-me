@@ -41,7 +41,7 @@
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji",sans-serif;
 
     /* comfortable tap target that grows a little on small viewports */
-    --tap:clamp(2.25rem, 2rem + 1vw, 2.6rem);
+    --tap:clamp(2.1rem, 2rem + 0.4vw, 2.3rem);
   }
 
   /* ============================================================
@@ -72,12 +72,12 @@
   }
 
   .wrap{
-    width:min(100%, 1080px);
+    width:min(100%, 1280px);
     margin-inline:auto;
     padding:
-      clamp(1.1rem, 0.6rem + 2.6vw, 2.4rem)
-      clamp(0.85rem, 0.4rem + 2.4vw, 2rem)
-      max(4rem, env(safe-area-inset-bottom));
+      clamp(0.7rem, 0.5rem + 1vw, 1.1rem)
+      clamp(0.7rem, 0.4rem + 1.2vw, 1.1rem)
+      max(1.6rem, env(safe-area-inset-bottom));
   }
 
   /* mono figures line up like a receipt */
@@ -87,14 +87,14 @@
      Header
      ============================================================ */
   header.masthead{
-    display:flex; align-items:center; gap:.8rem;
-    margin-bottom:clamp(1.3rem,0.9rem + 1.6vw,2rem);
+    display:flex; align-items:center; gap:.7rem;
+    margin-bottom:clamp(.7rem,.5rem + .6vw,1rem);
   }
   .mark{
     flex:0 0 auto;
-    width:clamp(2.6rem,2.2rem + 1.6vw,3.2rem);
-    height:clamp(2.6rem,2.2rem + 1.6vw,3.2rem);
-    border-radius:13px;
+    width:clamp(2.2rem,2rem + .8vw,2.6rem);
+    height:clamp(2.2rem,2rem + .8vw,2.6rem);
+    border-radius:11px;
     background:var(--green);
     color:#fff;
     display:grid; place-items:center;
@@ -103,7 +103,7 @@
   .mark svg{ width:58%; height:58%; }
   .masthead h1{
     margin:0;
-    font-size:clamp(1.35rem,1.1rem + 1.3vw,1.9rem);
+    font-size:clamp(1.2rem,1.05rem + .7vw,1.5rem);
     letter-spacing:-.02em;
     line-height:1.05;
   }
@@ -121,12 +121,12 @@
     border:1px solid var(--line);
     border-radius:var(--radius);
     box-shadow:var(--shadow);
-    padding:clamp(1rem,0.7rem + 1.3vw,1.6rem);
-    margin-bottom:clamp(1rem,0.7rem + 1.2vw,1.5rem);
+    padding:clamp(.75rem,.6rem + .6vw,1rem);
+    margin-bottom:clamp(.7rem,.55rem + .5vw,.9rem);
   }
   .section-head{
-    display:flex; align-items:center; gap:.55rem;
-    margin:0 0 clamp(.7rem,.5rem + .6vw,1rem);
+    display:flex; align-items:center; gap:.5rem;
+    margin:0 0 .6rem;
   }
   .section-head .ico{
     display:grid; place-items:center;
@@ -248,10 +248,10 @@
     border-spacing:0;
     width:100%;
     min-width:max-content;      /* let it grow so columns never crush */
-    font-size:.92rem;
+    font-size:.86rem;
   }
   .exp th, .exp td{
-    padding:.62rem .7rem;
+    padding:.34rem .5rem;
     border-bottom:1px solid var(--line);
     border-right:1px solid var(--line);
     text-align:center;
@@ -274,7 +274,7 @@
   .exp .col-item{
     position:sticky; left:0; z-index:3;
     background:var(--card);
-    min-width:9rem; max-width:16rem;
+    min-width:7.5rem; max-width:13rem;
   }
   .exp thead .col-item{ z-index:4; background:var(--panel); }
   .exp td.col-item .item-name{
@@ -289,7 +289,7 @@
 
   /* the per-person assignment toggle */
   .assign{
-    width:1.9rem; height:1.9rem; margin-inline:auto;
+    width:1.55rem; height:1.55rem; margin-inline:auto;
     display:grid; place-items:center;
     border-radius:var(--radius-xs);
     border:1px solid var(--line-strong);
@@ -303,7 +303,10 @@
   .assign[aria-pressed="true"]{
     background:var(--green); border-color:var(--green); color:#fff;
   }
-  .assign svg{ width:1rem; height:1rem; }
+  .assign svg{ width:.85rem; height:.85rem; }
+  .exp .icon-btn{ width:1.7rem; height:1.7rem; }
+  .exp .icon-btn svg{ width:.95rem; height:.95rem; }
+  .exp input{ min-height:1.9rem; padding:.3rem .5rem; }
   .assign:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(15,122,91,.3); }
 
   /* both inputs fill their cells so Item ≈ Amount, like the reference */
@@ -336,12 +339,6 @@
     color:var(--amber); font-weight:600; white-space:nowrap;
   }
   .tax-eq .num{ font-size:1.05rem; }
-  .tax-help{ margin:.55rem 0 0; font-size:.8rem; color:var(--muted); }
-  .tax-help code{
-    font-family:var(--mono); background:#fff;
-    border:1px solid var(--amber-line); border-radius:5px;
-    padding:.05rem .35rem; font-size:.85em;
-  }
 
   /* ============================================================
      Final totals — receipt cards, the signature moment
@@ -349,15 +346,15 @@
   .totals-card{ background:linear-gradient(180deg,#fff, #fcfcfa); }
   .totals-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(clamp(9rem, 26vw, 11rem), 1fr));
-    gap:clamp(.6rem,.4rem + .6vw,.9rem);
+    grid-template-columns:repeat(auto-fit, minmax(clamp(7.5rem, 22vw, 9rem), 1fr));
+    gap:.55rem;
   }
   .person-total{
     position:relative;
     background:var(--card);
     border:1px solid var(--line-strong);
     border-radius:var(--radius-sm);
-    padding:.9rem 1rem 1rem;
+    padding:.6rem .7rem .7rem;
     box-shadow:var(--shadow-sm);
     overflow:hidden;
   }
@@ -374,7 +371,7 @@
   }
   .person-total .pt-amount{
     font-family:var(--mono); font-variant-numeric:tabular-nums;
-    font-size:clamp(1.35rem,1.15rem + 1vw,1.75rem);
+    font-size:clamp(1.15rem,1.05rem + .5vw,1.4rem);
     font-weight:600; color:var(--green-ink); letter-spacing:-.02em;
     line-height:1;
   }
@@ -386,8 +383,8 @@
   .person-total .pt-break .num{ font-size:.78rem; color:var(--muted); }
 
   .grand{
-    margin-top:clamp(1rem,.7rem + 1vw,1.4rem);
-    padding-top:clamp(.9rem,.6rem + .8vw,1.2rem);
+    margin-top:.7rem;
+    padding-top:.6rem;
     border-top:1px dashed var(--line-strong);
     display:flex; align-items:baseline; justify-content:space-between;
     flex-wrap:wrap; gap:.4rem .8rem;
@@ -402,6 +399,32 @@
   .totals-empty{
     text-align:center; color:var(--faint); padding:1.4rem .5rem;
     font-size:.92rem;
+  }
+
+  /* ============================================================
+     Wide screens: two columns so a full settle-up (10 people /
+     20 items) fits in one screenshot. Items table left; people,
+     tax and totals stack on the right.
+     ============================================================ */
+  @media (min-width:1100px){
+    .wrap{
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+      grid-template-areas:
+        "head   head"
+        "items  people"
+        "items  tax"
+        "items  totals"
+        "items  .";
+      grid-template-rows:auto auto auto auto 1fr;
+      column-gap:.9rem;
+      align-items:start;
+    }
+    header.masthead{ grid-area:head; }
+    .sec-items{ grid-area:items; }
+    .sec-people{ grid-area:people; }
+    .tax-card{ grid-area:tax; }
+    .totals-card{ grid-area:totals; margin-bottom:0; }
   }
 
   /* very small screens: relax card padding a touch */
@@ -429,7 +452,7 @@
   </header>
 
   <!-- PEOPLE -->
-  <section class="card" aria-labelledby="people-h">
+  <section class="card sec-people" aria-labelledby="people-h">
     <div class="section-head">
       <span class="ico" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -456,7 +479,7 @@
   </section>
 
   <!-- EXPENSES -->
-  <section class="card" aria-labelledby="exp-h">
+  <section class="card sec-items" aria-labelledby="exp-h">
     <div class="section-head">
       <span class="ico" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -490,7 +513,6 @@
       </div>
       <span class="tax-eq">= <span class="num" id="taxValue">$0.00</span></span>
     </div>
-    <p class="tax-help">Type a number, or add them up inline — <code>15.74+11.1+18</code>. Split across people in proportion to what each ordered.</p>
   </section>
 
   <!-- TOTALS -->

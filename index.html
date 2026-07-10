@@ -63,12 +63,15 @@
   .lede { font-size: clamp(0.98rem, 2vw, 1.1rem); color: var(--muted); max-width: 46ch; margin: 0 auto; }
 
   .grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 26px 12px; padding: 18px 0 64px;
+    justify-items: center;
   }
   @media (min-width: 700px) {
-    .grid { grid-template-columns: repeat(4, 1fr);
-    gap: clamp(24px, 4vw, 36px) 12px; padding: clamp(16px, 3vw, 28px) 0 80px;
-    justify-items: center;
+    .grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(24px, 4vw, 36px) 12px; padding: clamp(16px, 3vw, 28px) 0 80px;
+    }
   }
   .tool {
     display: flex; flex-direction: column; align-items: center; text-align: center;
