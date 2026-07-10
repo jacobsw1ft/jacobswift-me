@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>When to Buy the Ticket — a fare-timing field guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16233A; --ink2:#41506B; --paper:#EDF0F4; --card:#FFFFFF;
+  --buy:#188A5E; --buyfill:rgba(24,138,94,.15); --amber:#C97F1B; --amberfill:rgba(201,127,27,.12);
+  --red:#BB4936; --line:#D3DAE3; --chip:#E2E7EE;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace; --sans:'Archivo',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} *{transition:none!important;animation:none!important}}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:0 18px}
+a{color:var(--buy)}
+/* ---------- hero ---------- */
+header{padding:44px 0 8px;border-bottom:2px solid var(--ink)}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;color:var(--ink2);text-transform:uppercase;margin-bottom:14px}
+h1{font-weight:800;font-size:clamp(2rem,7vw,3.2rem);line-height:1.02;letter-spacing:-.01em}
+.sub{margin:14px 0 4px;color:var(--ink2);font-size:1rem;max-width:56ch}
+.hero-curve{margin:18px -4px 0}
+/* ---------- steps ---------- */
+.step{margin:34px 0}
+.step-label{font-family:var(--mono);font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink2);
+  display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.step-label::after{content:"";flex:1;border-top:1px dashed var(--line)}
+.grid{display:grid;gap:10px}
+.grid.regions{grid-template-columns:repeat(2,1fr)}
+@media(min-width:620px){.grid.regions{grid-template-columns:repeat(4,1fr)}}
+.grid.cards{grid-template-columns:1fr}
+@media(min-width:620px){.grid.cards{grid-template-columns:repeat(2,1fr)}}
+button{font-family:inherit;cursor:pointer}
+.tile{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:14px;text-align:left;
+  transition:border-color .12s, transform .12s}
+.tile:hover{border-color:var(--ink2)}
+.tile:focus-visible,.chipbtn:focus-visible,.monthbtn:focus-visible,.faq-q:focus-visible{outline:3px solid var(--buy);outline-offset:2px}
+.tile.sel{border-color:var(--ink);border-width:2px;box-shadow:0 2px 0 var(--ink)}
+.tile .t-emoji{font-size:1.3rem}
+.tile .t-title{font-weight:700;font-size:.98rem;margin-top:6px}
+.tile .t-sub{color:var(--ink2);font-size:.8rem;margin-top:3px}
+.months{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(min-width:620px){.months{grid-template-columns:repeat(6,1fr)}}
+.monthbtn{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:9px 0;
+  font-family:var(--mono);font-size:.82rem;font-weight:500}
+.monthbtn:hover{border-color:var(--ink2)}
+.monthbtn.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* ---------- answer ---------- */
+#answer{margin:38px 0 8px}
+.answer-card{background:var(--card);border:2px solid var(--ink);border-radius:12px;padding:20px 18px;box-shadow:0 3px 0 var(--ink)}
+.route-line{font-family:var(--mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:10px}
+.window-big{font-weight:800;font-size:clamp(1.5rem,5.5vw,2.2rem);line-height:1.1;color:var(--buy)}
+.window-note{color:var(--ink2);font-size:.92rem;margin-top:6px}
+.banner{margin:14px 0 0;padding:10px 12px;border-radius:8px;font-size:.88rem;background:var(--amberfill);
+  border:1.5px solid var(--amber);color:#6d4408}
+.banner.red{background:rgba(187,73,54,.1);border-color:var(--red);color:#7c2417}
+.why{margin-top:16px;font-size:.94rem}
+.why b{font-weight:700}
+.chart-box{margin-top:18px}
+.chart-caption{font-family:var(--mono);font-size:.7rem;color:var(--ink2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-family:var(--mono);font-size:.7rem;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.chart-note{margin-top:10px;font-size:.78rem;color:var(--ink2);border-left:2px solid var(--line);padding-left:10px}
+.sw{width:14px;height:10px;border-radius:2px;display:inline-block}
+.reset{margin-top:16px;background:none;border:none;font-family:var(--mono);font-size:.78rem;color:var(--ink2);text-decoration:underline;padding:0}
+/* ---------- FAQ ---------- */
+#faq{margin:56px 0 30px}
+h2{font-weight:800;font-size:1.5rem;letter-spacing:-.01em}
+.faq-intro{color:var(--ink2);font-size:.95rem;margin:8px 0 18px;max-width:60ch}
+.faq-item{background:var(--card);border:1.5px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.faq-q{width:100%;background:none;border:none;text-align:left;padding:14px 16px;display:flex;gap:10px;align-items:center;font-size:.95rem;font-weight:700}
+.verdict{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;padding:3px 8px;border-radius:999px;white-space:nowrap;font-weight:600}
+.v-busted{background:rgba(187,73,54,.12);color:var(--red);border:1px solid var(--red)}
+.v-true{background:var(--buyfill);color:var(--buy);border:1px solid var(--buy)}
+.v-partly{background:var(--amberfill);color:var(--amber);border:1px solid var(--amber)}
+.faq-a{padding:0 16px 16px;font-size:.92rem;color:#2b3850;display:none}
+.faq-item.open .faq-a{display:block}
+.faq-q .caret{margin-left:auto;transition:transform .15s;color:var(--ink2)}
+.faq-item.open .caret{transform:rotate(90deg)}
+footer{border-top:2px solid var(--ink);padding:22px 0 46px;margin-top:20px}
+.method{font-family:var(--mono);font-size:.74rem;color:var(--ink2);line-height:1.7}
+.hidden{display:none}
+svg text{font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Field notes · fare timing · not investment advice, just airplane advice</div>
+    <h1>When to Buy the Ticket</h1>
+    <p class="sub">Airfare doesn't reward booking as early as possible — it rewards booking in the right <b>window</b>, and the window depends on what kind of market you're flying. Pick your trip below; I'll show you the curve.</p>
+    <div class="hero-curve" id="heroCurve"></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="step">
+    <div class="step-label">Step 1 · Where are you going?</div>
+    <div class="grid regions" id="regions"></div>
+  </section>
+
+  <section class="step hidden" id="cardStep">
+    <div class="step-label">Step 2 · What kind of trip?</div>
+    <div class="grid cards" id="cards"></div>
+  </section>
+
+  <section class="step hidden" id="monthStep">
+    <div class="step-label">Step 3 · Roughly when are you traveling?</div>
+    <div class="months" id="months"></div>
+  </section>
+
+  <section class="step hidden" id="originStep">
+    <div class="step-label" id="originLabel">One more thing</div>
+    <div class="grid regions" id="origins"></div>
+  </section>
+
+  <section id="answer" class="hidden" aria-live="polite"></section>
+
+  <section id="faq">
+    <h2>Booking myths, adjudicated</h2>
+    <p class="faq-intro">Everything below is graded against fare-tracking data (mostly Google Flights' multi-year analyses) rather than folklore. Two of these myths are actually true — those are where the real money is.</p>
+    <div id="faqList"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap method">
+    METHODOLOGY — Booking windows and ◆ markers are anchored to published fare-tracking data, chiefly Google Flights' multi-year fare-path analyses (domestic low point ≈39 days out, low range 23–51 days; international lows ≈49+ days and region-dependent), plus their holiday-specific figures. The curve lines are schematics of market mechanics — demand mix, carrier mix, seasonality — not measured fares; no public dataset publishes true booking curves. Built by a friend who does this for a living; opinions are mine alone and not my employer's. Prices are never guaranteed — when you see a fare below the recent average inside your window, buy it.
+  </div>
+</footer>
+
+<script>
+/* ============ curve engine ============ */
+/* x-axis: days before departure, 330 -> 0, sqrt-compressed so the last-minute wall is legible */
+const HORIZON = 330;
+const X = d => 1 - Math.sqrt(Math.max(d,0)/HORIZON);
+const TICKS = [[300,"10 mo"],[180,"6 mo"],[90,"3 mo"],[42,"6 wk"],[14,"2 wk"],[0,"day of"]];
+const gauss = (d,c,w) => Math.exp(-((d-c)*(d-c))/(2*w*w));
+
+/* Curves are BUILT FROM the card's buy window so the price minimum always
+   falls inside the shaded band — validity by construction. f(daysOut) -> 0..1 */
+function buildFn(shape, bands){
+  const bs = bands.map(b=>({hi:Math.max(b.from,b.to), lo:Math.min(b.from,b.to)}));
+  const p = bs[0];                                   /* primary (green) window */
+  const c0=(p.hi+p.lo)/2;
+  /* one dip per band: primary deepest, secondary (sale) shallower */
+  const dips = d => bs.reduce((a,b,i)=>{
+    const c=(b.hi+b.lo)/2, w=Math.max((b.hi-b.lo)/2,10);
+    return a + (i===0? .16 : .12)*gauss(d,c,w);
+  },0);
+  switch(shape){
+    case 'flat':      /* business trunk: flat, faint dip in window, brutal ~5-day wall */
+      return d => .38 - .5*dips(d) + .55*Math.exp(-d/3.5);
+    case 'flatHigh':  /* consolidated hub: flat and high; nothing helps much */
+      return d => .62 - .4*dips(d) + .34*Math.exp(-d/4);
+    case 'u':         /* leisure U: AP premium far out, trough at window, wall inside it */
+    case 'bimodal':   /* same skeleton + one dip per shaded band */
+      return d => .32 + .26*Math.pow(Math.max(0,d-c0)/Math.max(1,HORIZON-c0),1.4)
+                - dips(d) + .55*Math.exp(-d/Math.max(4,p.lo/3));
+    case 'deepSeason':/* seasonal long-haul: min plateau across window, relentless rise after */
+      return d => .28 + (d>p.hi ? .16*Math.pow((d-p.hi)/(HORIZON-p.hi+1),1.4) : 0)
+                + (d<p.lo ? .55*Math.pow((p.lo-d)/p.lo,1.3) : 0)
+                + .18*Math.exp(-d/6);
+    case 'earlyLock': /* VFR peak / thin capacity: cheapest at far edge, monotone climb */
+      return d => .25 + (d>=p.lo ? .06*(1-(d-p.lo)/(HORIZON-p.lo)) : .62*Math.pow((p.lo-d)/p.lo,1.5))
+                + .16*Math.exp(-d/6);
+    case 'monotonic': /* ULCC: cheapest at schedule load, only rises */
+      return d => .18 + .60*Math.pow((HORIZON-d)/HORIZON,1.2) + .2*Math.exp(-d/8);
+  }
+}
+
+function curveSVG(shape, bands, opts={}){
+  const W=640,H=200,padL=8,padR=8,padT=14,padB=30;
+  const iw=W-padL-padR, ih=H-padT-padB;
+  const fn=buildFn(shape,bands);
+  let pts=[];
+  for(let d=HORIZON; d>=0; d-=3){
+    const x=padL+X(d)*iw, y=padT+(1-Math.min(.98,Math.max(.02,fn(d))))*ih;
+    pts.push(x.toFixed(1)+","+y.toFixed(1));
+  }
+  const bandRects = bands.map(b=>{
+    const x1=padL+X(b.from)*iw, x2=padL+X(b.to)*iw;
+    const fill = b.kind==='amber' ? 'var(--amberfill)' : 'var(--buyfill)';
+    const stroke = b.kind==='amber' ? 'var(--amber)' : 'var(--buy)';
+    const lbl = b.label ? `<text x="${(x1+x2)/2}" y="${padT+10}" text-anchor="middle" font-size="9" fill="${stroke}" font-weight="600">${b.label}</text>` : '';
+    return `<rect x="${x1}" y="${padT}" width="${x2-x1}" height="${ih}" fill="${fill}"></rect>
+      <line x1="${x1}" y1="${padT}" x2="${x1}" y2="${padT+ih}" stroke="${stroke}" stroke-dasharray="3 3" stroke-width="1"/>
+      <line x1="${x2}" y1="${padT}" x2="${x2}" y2="${padT+ih}" stroke="${stroke}" stroke-dasharray="3 3" stroke-width="1"/>${lbl}`;
+  }).join('');
+  const grid = TICKS.map(([d,lbl])=>{
+    const x=padL+X(d)*iw;
+    return `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+ih}" stroke="var(--line)" stroke-width="1"/>
+      <text x="${x}" y="${H-10}" text-anchor="${d===0?'end':'middle'}" font-size="9.5" fill="var(--ink2)">${lbl}</text>`;
+  }).join('');
+  let markEl='';
+  if(opts.mark){
+    const mx=padL+X(opts.mark.d)*iw, my=padT+(1-Math.min(.98,Math.max(.02,fn(opts.mark.d))))*ih;
+    markEl=`<path d="M ${mx} ${my-6} L ${mx+5} ${my} L ${mx} ${my+6} L ${mx-5} ${my} Z" fill="var(--ink)" stroke="var(--card)" stroke-width="1.5"/>
+      <text x="${mx}" y="${my-11}" text-anchor="middle" font-size="9" font-weight="600" fill="var(--ink)">${opts.mark.label}</text>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${opts.aria||'Stylized booking curve with shaded buy window'}">
+    ${grid}${bandRects}
+    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linejoin="round"/>
+    ${markEl}
+    <text x="${padL}" y="${padT+2}" font-size="9.5" fill="var(--ink2)">price ▲</text>
+  </svg>`;
+}
+
+/* ============ market data ============ */
+/* variant matching: first variant whose months include m (and origin matches) wins; 'def' is fallback */
+const M = (...xs)=>xs; // month list helper (0=Jan)
+const REGIONS=[
+ {id:'us',emoji:'🇺🇸',label:'Within the US & Canada',cards:[
+  {id:'bigcity',title:'Big city trip',sub:'NYC, Chicago, LA, Toronto — business-heavy routes',variants:[
+    {months:M(10),window:'About 5 weeks out',days:[24,59],curve:'flat',mark:{d:35,label:'\u25c6 35d \u00b7 Google measured Thanksgiving low'},banner:'Thanksgiving picked — counterintuitively, this holiday books best surprisingly late. The low range runs 24–59 days out, centered around 35 days.',
+     why:'Business-heavy trunk routes price <b>flat</b> almost the whole curve — the airlines make their money on last-minute corporate walk-ups, not on you. The only real mistake is booking inside about 7 days, when the wall hits.'},
+    {months:M(11),window:'2–4 months out',days:[60,120],curve:'u',banner:'December travel: Christmas & New Year demand overrides normal big-city pricing. Book earlier than you normally would for these routes.',
+     why:'Normally these routes are forgiving, but Christmas week turns every market into a leisure market. Lock it by mid-fall.'},
+    {def:1,window:'1–4 weeks out',days:[7,30],curve:'flat',mark:{d:39,label:'\u25c6 39d \u00b7 Google all-domestic measured low'},
+     why:'Business-heavy trunk routes price <b>flat</b> almost the whole curve — capacity is huge and airlines save the pain for last-minute corporate travelers. Don\u2019t stress, don\u2019t book 6 months out (you\u2019ll pay the advance-purchase premium), just avoid the final 7 days. Flying Tue/Wed instead of Sunday matters more than anything else here.'}]},
+  {id:'beach',title:'Beach & theme parks',sub:'Florida, Gulf Coast beaches, Orlando, Myrtle',variants:[
+    {months:M(0,1,2,3),window:'3–5 months out',days:[90,150],curve:'deepSeason',banner:'Winter / spring-break season: this is peak Florida. Every school district in the north is pointed at the same runways.',
+     why:'In winter these markets behave nothing like the rest of the year: demand is enormous, capacity is maxed, and cheap seats sell up early. The old "deals show up late" pattern <b>does not apply</b> from January through spring break.'},
+    {months:M(5,6,7),window:'2–4 months out',days:[60,120],curve:'u',banner:'Summer family season — Orlando especially is school-calendar-locked.',
+     why:'Summer is a secondary peak. Book earlier than off-season, but it\u2019s not the winter stampede.'},
+    {months:M(11),window:'3–5 months out',days:[90,150],curve:'earlyLock',banner:'Christmas in Florida books early and only gets worse. Buy by early fall.',
+     why:'Holiday sun-seeking is the strongest demand these routes see all year.'},
+    {def:1,window:'3–7 weeks out',days:[21,50],curve:'u',mark:{d:39,label:'\u25c6 39d \u00b7 Google all-domestic measured low'},
+     why:'Off-season, these routes are drenched in low-cost-carrier capacity, and deals persist surprisingly late. The trough sits in the classic domestic window — roughly 3–7 weeks out — then the last-minute wall hits inside 2–3 weeks. Fares can nearly double in the final stretch, so don\u2019t push it.'}]},
+  {id:'vegas',title:'Vegas & weekend getaways',sub:'Las Vegas, Nashville, New Orleans, Austin',variants:[
+    {def:1,window:'3–6 weeks out',days:[21,45],curve:'u',mark:{d:39,label:'\u25c6 39d \u00b7 Google all-domestic measured low'},
+     why:'Heavy low-cost competition keeps the base curve friendly — the standard 3–6 week window works. The real risk isn\u2019t timing, it\u2019s <b>events</b>: a fight weekend, festival, marathon, or convention can triple fares regardless of lead time. Check the destination\u2019s event calendar before trusting any window, and if your dates hit one, book the moment plans firm up.'}]},
+  {id:'hawaii',title:'Hawaii',sub:'Honolulu, Maui, Kauai, Big Island',origin:{q:'Where are you starting from?',opts:[['west','West Coast'],['other','Everywhere else']]},variants:[
+    {months:M(5,6,7,11),origin:'west',window:'3–6 months out',days:[90,180],curve:'deepSeason',banner:'Peak Hawaii (summer or Christmas): book early even from the coast.',
+     why:'Peak-season Hawaii sells up early. West Coast capacity helps, but not enough to save late bookers in July or December.'},
+    {months:M(5,6,7,11),origin:'other',window:'4–8 months out',days:[120,240],curve:'earlyLock',banner:'Peak Hawaii from the interior/east: the least forgiving combination on this site. Book as far out as your plans allow.',
+     why:'Fewer one-stop options, longer hauls, peak demand. Cheap seats to the islands from east of the Rockies are the first thing to disappear.'},
+    {origin:'west',def:1,window:'2–4 months out',days:[60,120],curve:'u',
+     why:'From the West Coast there\u2019s tons of capacity and real competition, so Hawaii behaves closer to a domestic leisure market. Off-peak you have room to shop.'},
+    {def:1,window:'3–6 months out',days:[90,180],curve:'deepSeason',
+     why:'From everywhere else, Hawaii is a long-haul market wearing a domestic costume: thinner service, more connections, earlier sell-up. Give it long-haul lead time.'}]},
+  {id:'alaska',title:'Alaska',sub:'Anchorage, Fairbanks, Juneau',variants:[
+    {months:M(4,5,6,7,8),window:'3–6 months out',days:[90,180],curve:'deepSeason',banner:'Summer cruise-and-parks season: nearly all of Alaska\u2019s tourist demand lands in these few months.',
+     why:'Alaska is the most seasonally concentrated market in the US. Summer capacity fills early; book like it\u2019s an international trip.'},
+    {def:1,window:'3–6 weeks out',days:[21,45],curve:'flat',
+     why:'Off-season Alaska is cheap and late-bookable — the demand simply isn\u2019t there. Standard domestic window, no drama.'}]},
+  {id:'ski',title:'Ski country',sub:'Denver, Salt Lake, Vail/Eagle, Jackson, Montrose',variants:[
+    {months:M(11,1,2),window:'4–6 months out',days:[120,180],curve:'earlyLock',banner:'Holiday & Presidents\u2019/spring-break ski weeks: small mountain airports have hard capacity limits, and those seats go first.',
+     why:'The little airports (Eagle, Jackson, Montrose, Aspen) can\u2019t add flights the way Orlando can. When peak-week seats are gone, they\u2019re gone — the curve only goes up.'},
+    {months:M(0,3),window:'2–3 months out',days:[60,90],curve:'u',
+     why:'Non-holiday winter is gentler: still book ahead, but January and late-season have real deals, especially into Denver or Salt Lake with a drive.'},
+    {def:1,window:'3–6 weeks out',days:[21,45],curve:'flat',
+     why:'Summer in the mountains is an off-peak sleeper — standard domestic window applies.'}]},
+  {id:'ulcc',title:'Small-airport budget airline',sub:'Allegiant/ULCC point-to-point: think Grand Rapids–Punta Gorda',variants:[
+    {def:1,window:'As early as possible',days:[150,330],curve:'monotonic',
+     why:'These fares break every rule on this site: they\u2019re loaded cheap when the schedule opens and mostly <b>only go up</b> as seats sell. There is no trough to wait for. Book the moment your plans firm, or buy during one of the carrier\u2019s fare sales — and remember the advertised fare is a starting bid before bags and seats.'}]}
+ ]},
+ {id:'latin',emoji:'🏝️',label:'Mexico, Caribbean & Latin America',cards:[
+  {id:'beachresorts',title:'Beach resorts',sub:'Cancún, Los Cabos, Punta Cana, Jamaica, Aruba',variants:[
+    {months:M(2),window:'3–5 months out',days:[90,150],curve:'deepSeason',banner:'Spring break: every college and school calendar converges on these beaches. Book by early winter.',
+     why:'March transforms these routes. What is normally a forgiving, high-frequency market becomes a sell-out.'},
+    {months:M(11),window:'4–6 months out',days:[120,180],curve:'earlyLock',banner:'Christmas/New Year beach weeks are the peak of the peak.',
+     why:'Holiday sun demand books very early. By October, the cheap seats for Christmas week are usually gone.'},
+    {def:1,window:'1–3 months out',days:[30,90],curve:'u',mark:{d:49,label:'\u25c6 49d \u00b7 Google all-international measured low'},
+     why:'Outside the peaks, so much capacity flies to these beaches that they behave like domestic leisure routes — the window is short and deals are common. Mexico and the Caribbean price almost identically, which is why they share a card.'}]},
+  {id:'mexvfr',title:'Visiting family in Mexico',sub:'Guadalajara, Mexico City, León/Bajío, Morelia',variants:[
+    {months:M(11),window:'5+ months out',days:[150,270],curve:'earlyLock',banner:'December to interior Mexico is one of the toughest tickets in the system. Everyone flies home for the holidays at once, and capacity doesn\u2019t flex.',
+     why:'This is a visiting-friends-and-relatives market with a single overwhelming peak. The curve for December basically never comes down — <b>early beats clever, every time</b>.'},
+    {def:1,window:'1–3 months out',days:[30,90],curve:'u',mark:{d:49,label:'\u25c6 49d \u00b7 Google all-international measured low'},
+     why:'Outside December, strong competition (including low-cost carriers on both sides of the border) keeps these routes reasonable on a standard short-haul window.'}]},
+  {id:'centam',title:'Central America & Colombia',sub:'Costa Rica, Guatemala, Medellín, Bogotá, Cartagena',variants:[
+    {months:M(11),window:'3–5 months out',days:[90,150],curve:'earlyLock',banner:'December mixes holiday VFR demand with peak dry-season tourism. Book early.',
+     why:'Two demand waves stack in December: families flying home and tourists chasing the dry season.'},
+    {def:1,window:'1–3 months out',days:[30,90],curve:'u',mark:{d:49,label:'\u25c6 49d \u00b7 Google all-international measured low'},
+     why:'Short-haul international that behaves like domestic: lots of capacity, real low-cost competition, short windows. Watch for sales.'}]},
+  {id:'southam',title:'Deep South America',sub:'Brazil, Argentina, Chile, Peru',variants:[
+    {months:M(11,0,1),window:'4–6 months out',days:[120,180],curve:'deepSeason',banner:'December–February is austral summer — their July — plus Carnival. Book on peak-season rules.',
+     why:'Southern-hemisphere seasons flip the calendar: their high season is our winter. Carnival adds an event spike on top.'},
+    {def:1,window:'2–4 months out',days:[60,120],curve:'u',
+     why:'Long flights but decent competition and frequent sales. A medium window works; set an alert and buy on a dip.'}]}
+ ]},
+ {id:'emea',emoji:'🇪🇺',label:'Europe, Middle East & Africa',cards:[
+  {id:'europe',title:'Europe',sub:'Paris, Rome, Barcelona, Amsterdam, Athens, Lisbon',origin:{q:'Where are you starting from?',opts:[['coastal','East Coast / big international gateway'],['interior','Midwest, South, or smaller city']]},variants:[
+    {months:M(5,6,7),origin:'coastal',window:'4–7 months out',days:[120,210],curve:'deepSeason',banner:'Summer Europe: the single most common "I waited too long" market. For a July trip, the cheap seats are usually gone by March.',
+     why:'Summer transatlantic demand books far ahead and capacity sells up steadily. The curve bottoms out <b>months</b> before departure and then climbs without mercy. Whatever fare you see 5–6 months out is probably as good as it gets.'},
+    {months:M(5,6,7),origin:'interior',window:'5–8 months out',days:[150,240],curve:'earlyLock',banner:'Summer Europe from the interior: add a month or two of lead time versus the coasts — fewer nonstops, less competition, earlier sell-up.',
+     why:'From the Midwest and South you\u2019re often riding one or two daily nonstops or connecting over a coastal hub. Less competition means the cheap buckets close even earlier.'},
+    {months:M(10,11,0,1,2),window:'1–3 months out — and watch the Jan–Mar sales',days:[30,90],curve:'bimodal',
+     bands2:[{from:150,to:240,label:'sale season',kind:'amber'}],mark:{d:49,label:'\u25c6 49d \u00b7 Google all-international measured low'},
+     why:'Off-peak Europe is a genuinely <b>bimodal</b> market — the chart shows two dips. Airlines run their big transatlantic sales in January–March, so if you\u2019re traveling in spring, fares bought during sale season (far out) can beat the "normal" window. Otherwise the standard 1–3 month window works fine, and winter deals sometimes appear even closer in.'},
+    {def:1,window:'3–5 months out',days:[90,150],curve:'u',
+     why:'Shoulder season (spring and fall) is the sweet spot for Europe: softer demand, still-good weather, and a forgiving curve. Book a few months out and enjoy fares that summer travelers would kill for.'}]},
+  {id:'london',title:'London & business Europe',sub:'London, Frankfurt, Zurich — the corporate corridors',variants:[
+    {months:M(10,11,0,1),window:'1–3 months out',days:[30,90],curve:'bimodal',mark:{d:49,label:'\u25c6 49d \u00b7 Google all-international measured low'},
+     why:'Winter on these routes is deal country — enormous capacity chasing thin leisure demand. Sales pop up regularly; a fare alert will catch one within a few weeks.'},
+    {def:1,window:'2–5 months out',days:[60,150],curve:'u',
+     why:'These are the busiest long-haul corridors in the world, and all that capacity keeps economy honest. The window is wide and forgiving — the business travelers up front are subsidizing your seat in back. (Premium cabins play a totally different game: book those at schedule open or hunt awards.)'}]},
+  {id:'iceice',title:'Iceland & Ireland',sub:'Reykjavík, Dublin — the sale-driven gateways',variants:[
+    {def:1,window:'when a sale hits — set alerts now',days:[45,90],curve:'bimodal',
+     bands2:[{from:150,to:270,label:'sale windows',kind:'amber'}],
+     why:'These markets are priced by <b>promotion, not calendar</b>. The carriers here (Icelandair, Aer Lingus and friends) run frequent aggressive sales, so the winning move is a price alert and a fast trigger finger, not a fixed window. The chart shows why: two dips, and neither is guaranteed — whichever sale hits first, take it.'}]},
+  {id:'mideast',title:'Middle East & Gulf',sub:'Dubai, Doha, Abu Dhabi, Istanbul',variants:[
+    {def:1,window:'2–6 months out',days:[60,180],curve:'u',
+     why:'The Gulf carriers keep this market swimming in capacity, which keeps it sale-driven and the window unusually wide. Set an alert 6+ months out and buy on any meaningful dip — there\u2019s no single trough to time.'}]},
+  {id:'africa',title:'Africa',sub:'Johannesburg, Accra, Lagos, Nairobi, Cairo',variants:[
+    {months:M(11),window:'6–9 months out',days:[180,270],curve:'earlyLock',banner:'December to West/East Africa is dominated by holiday family travel on very thin capacity. This books out earlier than almost anything else on this site.',
+     why:'Few flights, huge December demand, no slack. Book the moment plans exist.'},
+    {def:1,window:'4–9 months out',days:[120,270],curve:'earlyLock',
+     why:'Capacity to Africa is thin year-round — a handful of nonstops and connections over Europe or the Gulf. Thin capacity means early sell-up: this is an early-lock market where waiting is rarely rewarded.'}]}
+ ]},
+ {id:'apac',emoji:'🌏',label:'Asia & the Pacific',cards:[
+  {id:'japankorea',title:'Japan & Korea',sub:'Tokyo, Osaka, Seoul',variants:[
+    {months:M(2,3),window:'6+ months out',days:[180,270],curve:'earlyLock',banner:'Cherry blossom season (late Mar–Apr) has become a global pilgrimage. Book on peak rules, far out.',
+     why:'Sakura demand now rivals summer Europe. The cheap seats for late March and early April vanish half a year ahead.'},
+    {def:1,window:'3–6 months out',days:[90,180],curve:'u',
+     why:'Transpacific with healthy competition. A standard long-haul window works; midweek departures save serious money on these routes.'}]},
+  {id:'seasia',title:'Southeast Asia',sub:'Bangkok, Vietnam, Philippines, Singapore',variants:[
+    {months:M(11),window:'6–9 months out',days:[180,270],curve:'earlyLock',banner:'December to Southeast Asia — especially Manila — is extreme holiday family-travel demand. No exaggeration: think 6–9 months of lead time.',
+     why:'The December Philippines rush is one of the steepest booking curves in the world. Every seat is spoken for months in advance.'},
+    {def:1,window:'4–8 months out',days:[120,240],curve:'deepSeason',
+     why:'Long hauls, mostly one-stop, with fares that reward patience only on the front end. Start watching 8 months out; buy when you see a dip.'}]},
+  {id:'china',title:'China & Hong Kong',sub:'Shanghai, Beijing, Hong Kong',variants:[
+    {def:1,window:'4–7 months out',days:[120,210],curve:'earlyLock',
+     why:'Nonstop capacity is still well below its former levels, and constrained supply means early sell-up. Around Lunar New Year, treat it like December Manila: as early as possible.'}]},
+  {id:'india',title:'India',sub:'Delhi, Mumbai, Hyderabad, Bangalore',variants:[
+    {months:M(11),window:'5–9 months out',days:[150,270],curve:'earlyLock',banner:'December to India is, without exaggeration, the hardest ticket in this library. Weddings + holidays + families flying home = a curve that never dips.',
+     why:'This is the ultimate visiting-friends-and-relatives peak. For December travel, book in spring or early summer. Waiting has essentially a 0% hit rate.'},
+    {def:1,window:'2–5 months out',days:[60,150],curve:'u',
+     why:'Off-peak, plenty of one-stop competition over Europe and the Gulf keeps fares workable in a medium window.'}]},
+  {id:'anz',title:'Australia & New Zealand',sub:'Sydney, Melbourne, Auckland',variants:[
+    {months:M(11,0,1),window:'6–8 months out',days:[180,240],curve:'earlyLock',banner:'Heads up: December–February is <b>their summer</b>. You picked the peak.',
+     why:'Inverted seasons trip everyone up. Down-under summer (our winter) plus limited transpacific capacity means booking far, far ahead.'},
+    {def:1,window:'4–8 months out',days:[120,240],curve:'deepSeason',
+     why:'Very long hauls on limited capacity — among the longest lead times of any leisure market. Their winter (our summer) is the value season.'}]}
+ ]}
+];
+
+const FAQS=[
+ {v:'busted',q:'“Book on a Tuesday for cheap fares.”',a:'Google Flights\u2019 own multi-year analysis found booking Tuesday vs. Sunday (the "most expensive" day) differs by about 1.3% — and booking midweek vs. weekend saved roughly 1.9%. Rounding error. This myth is a fossil from the early 2000s, when airlines filed fares in weekly batches: legacy carriers loaded sales Monday night and competitors matched by Tuesday. Continuous, algorithmic repricing killed that pattern years ago. The best day to book is the day you see a good fare.'},
+ {v:'true',q:'“The day you FLY changes the price.”',a:'This is where the real money is. Google\u2019s analysis of round-trip fares (2021–2025, top 4,000 US markets) found Monday–Wednesday departures run about 13% cheaper than weekend flights, and Sunday is routinely the most expensive day as weekenders head home. Stop optimizing the booking day (~1%) and start optimizing the flying day (~13%). On international trips the midweek savings are even larger in dollar terms.'},
+ {v:'busted',q:'“Search in incognito or airlines will jack up your price.”',a:'The most stubborn myth in travel, and the evidence against it is unusually strong. Consumer Reports ran 372 paired searches (regular vs. private browsing) and found identical prices 88% of the time — incognito was cheaper just 7% and actually more expensive 5%, i.e., pure noise. Better yet, economists from Berkeley, Yale, and Chicago studied a major US airline\u2019s actual pricing system and found your individual search activity has no effect on the fares you\u2019re shown — prices move on total bookings for the flight. What really happened when the price "jumped on you": a cheap fare bucket sold out between your searches. That\u2019s inventory, not surveillance. It feels personal; it isn\u2019t.'},
+ {v:'partly',q:'“Use a VPN to get cheaper foreign prices.”',a:'Partially true, rarely worth it. Point-of-sale pricing is real — the same itinerary can be filed at different levels by country or currency, and a Norwegian Consumer Council test of 12 travel platforms found price differences in 38% of cases. But only a sliver traced to personalization; most came from timing and data-source differences. Add payment friction, currency conversion, and customer-service headaches on a foreign-market ticket, and the juice usually isn\u2019t worth the squeeze.'},
+ {v:'busted',q:'“Wait for a last-minute deal.”',a:'The most expensive myth on this list. Inside about 21 days, fares climb — airlines know late bookers are business travelers or people who have to go, and there\u2019s little inventory left to discount. Domestic fares can nearly double in the final three weeks. Last-minute deals died with empty airplanes: modern flights leave full, so there\u2019s no distressed inventory to dump. If your dates are fixed, waiting from 6 weeks out is a losing bet.'},
+ {v:'busted',q:'“Booking earlier is always better.”',a:'Also no — the curve is U-shaped for most markets. Fare studies consistently find that booking ~9 months out costs nearly as much as booking last-minute, and travelers who booked 6+ months ahead overpaid by ~$160 on average versus the optimal window. Airlines charge an advance-purchase premium to people who book the day the schedule opens. The sweet spot is a window, not "ASAP." (The big exception: ultra-low-cost carriers, whose fares really are cheapest at schedule load and mostly rise — see the budget-airline card above.)'},
+ {v:'busted',q:'“Book at 1 a.m. / on your phone / at a magic hour.”',a:'No evidence for any of it. Fares reprice continuously, all day, driven by bookings and competitor moves — not by the clock on your wall or the device in your hand.'},
+ {v:'true',q:'“Flights with layovers are cheaper.”',a:'Genuinely true — Google\u2019s data puts the average savings around 22% versus nonstop. It\u2019s a real trade of time for money, not a myth. Whether it\u2019s a good trade is up to you (and your connection city in January).'},
+ {v:'partly',q:'“Online travel agencies have secret deals.”',a:'Mostly not. OTAs occasionally surface odd fare constructions, but at the same price you should book direct with the airline: cleaner customer service when things go wrong, and full access to the US DOT rule that lets you cancel any booking free within 24 hours (when booked 7+ days before departure). That 24-hour rule is the honest version of what people want incognito mode to be — lock a fare, keep shopping for a day, risk-free.'},
+ {v:'partly',q:'“If the price drops after I buy, I\u2019m stuck.”',a:'Not always. Within 24 hours of booking you can cancel free (US DOT rule) and rebook the lower fare. After that, most major US airlines have dropped change fees on standard economy — you can often rebook the same flight at the lower price and pocket the difference as a travel credit. Basic economy is the exception: that fare is truly locked.'}
+];
+
+/* ============ app state & render ============ */
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let S={r:null,c:null,m:null,o:null};
+const $=id=>document.getElementById(id);
+const regionById=id=>REGIONS.find(r=>r.id===id);
+const cardById=(r,c)=>regionById(r).cards.find(x=>x.id===c);
+
+function pickVariant(card,m,o){
+  for(const v of card.variants){
+    if(v.def) continue;
+    const mOK = !v.months || v.months.includes(m);
+    const oOK = !v.origin || v.origin===o;
+    if(v.months && mOK && oOK) return v;
+  }
+  for(const v of card.variants){ if(!v.def) continue; if(!v.origin||v.origin===o) return v; }
+  return card.variants.find(v=>v.def);
+}
+
+function render(){
+  // regions
+  $('regions').innerHTML=REGIONS.map(r=>
+    `<button class="tile ${S.r===r.id?'sel':''}" onclick="setR('${r.id}')">
+      <div class="t-emoji">${r.emoji}</div><div class="t-title">${r.label}</div></button>`).join('');
+  // cards
+  const cs=$('cardStep');
+  if(S.r){cs.classList.remove('hidden');
+    $('cards').innerHTML=regionById(S.r).cards.map(c=>
+      `<button class="tile ${S.c===c.id?'sel':''}" onclick="setC('${c.id}')">
+        <div class="t-title">${c.title}</div><div class="t-sub">${c.sub}</div></button>`).join('');
+  } else cs.classList.add('hidden');
+  // months
+  const ms=$('monthStep');
+  if(S.c){ms.classList.remove('hidden');
+    $('months').innerHTML=MONTHS.map((m,i)=>
+      `<button class="monthbtn ${S.m===i?'sel':''}" onclick="setM(${i})">${m}</button>`).join('');
+  } else ms.classList.add('hidden');
+  // origin
+  const card=S.c?cardById(S.r,S.c):null;
+  const os=$('originStep');
+  if(card && card.origin && S.m!==null){
+    os.classList.remove('hidden');
+    $('originLabel').textContent='Step 4 · '+card.origin.q;
+    $('origins').innerHTML=card.origin.opts.map(([id,lbl])=>
+      `<button class="tile ${S.o===id?'sel':''}" onclick="setO('${id}')">
+        <div class="t-title">${lbl}</div></button>`).join('');
+  } else os.classList.add('hidden');
+  // answer
+  const ready = card && S.m!==null && (!card.origin || S.o);
+  const ans=$('answer');
+  if(ready){
+    const v=pickVariant(card,S.m,S.o);
+    const bands=[{from:v.days[1],to:v.days[0],label:'buy window'}].concat(v.bands2||[]);
+    // normalize band order (from = further out)
+    bands.forEach(b=>{ if(b.from<b.to){const t=b.from;b.from=b.to;b.to=t;} });
+    const originLbl = card.origin && S.o ? ' · from '+card.origin.opts.find(x=>x[0]===S.o)[1] : '';
+    ans.classList.remove('hidden');
+    ans.innerHTML=`<div class="answer-card">
+      <div class="route-line">${regionById(S.r).label} · ${card.title} · ${MONTHS[S.m]}${originLbl}</div>
+      <div class="window-big">Book ${v.window.charAt(0).toLowerCase()===v.window.charAt(0)?v.window:v.window.toLowerCase()}</div>
+      <div class="window-note">Then stop looking. Second-guessing a fare inside the window is how people end up paying the last-minute wall.</div>
+      ${v.banner?`<div class="banner">⚠️ ${v.banner}</div>`:''}
+      <p class="why">${v.why}</p>
+      <div class="chart-box">
+        <div class="chart-caption">Illustrative fare path · this market type</div>
+        ${curveSVG(v.curve,bands,{mark:v.mark})}
+        <div class="legend">
+          <span><span class="sw" style="background:var(--buyfill);border:1px solid var(--buy)"></span>buy window — anchored to published fare data</span>
+          ${(v.bands2)?'<span><span class="sw" style="background:var(--amberfill);border:1px solid var(--amber)"></span>secondary window (sale-driven)</span>':''}
+          ${(v.mark)?'<span>◆ measured low — Google Flights fare tracking</span>':''}
+          <span><span class="sw" style="background:none;border-bottom:2.4px solid var(--ink);height:2px"></span>relative price vs. days before departure</span>
+        </div>
+        <div class="chart-note">The line is a schematic — it shows how this market type behaves (advance-purchase premium, sell-up, the last-minute wall), not measured fares. The shaded window and ◆ markers are the data-anchored parts.</div>
+      </div>
+      <button class="reset" onclick="resetAll()">↺ start over</button>
+    </div>`;
+    ans.scrollIntoView({behavior:'smooth',block:'nearest'});
+  } else ans.classList.add('hidden');
+}
+function setR(id){S={r:id,c:null,m:null,o:null};render()}
+function setC(id){S.c=id;S.m=null;S.o=null;render()}
+function setM(i){S.m=i;S.o=null;render();
+  const card=cardById(S.r,S.c);
+  if(!card.origin) $('answer').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function setO(id){S.o=id;render()}
+function resetAll(){S={r:null,c:null,m:null,o:null};render();window.scrollTo({top:0,behavior:'smooth'})}
+
+/* FAQ */
+const VLBL={busted:'BUSTED',true:'TRUE',partly:'PARTLY TRUE'};
+$('faqList').innerHTML=FAQS.map((f,i)=>`<div class="faq-item" id="fq${i}">
+  <button class="faq-q" onclick="document.getElementById('fq${i}').classList.toggle('open')" aria-expanded="false">
+    <span class="verdict v-${f.v}">${VLBL[f.v]}</span> ${f.q} <span class="caret">▸</span></button>
+  <div class="faq-a">${f.a}</div></div>`).join('');
+
+/* hero ambient curve: classic U with window */
+$('heroCurve').innerHTML=curveSVG('u',[{from:50,to:21,label:'the window'}],{aria:'Illustrative U-shaped booking curve'});
+render();
+</script>
+</body>
+</html>
