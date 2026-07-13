@@ -218,7 +218,7 @@ const LADDER_Q = [
    opts:["A blood pressure check every 30 minutes","Occasional visual checks by whoever is nearby","Continuous pulse oximetry with a person whose only job is to monitor the child","Monitoring that begins after the procedure ends"],
    correct:2, why:"Sedation requires continuous oxygenation/ventilation monitoring and a dedicated monitor to catch early compromise."},
   {q:"Before an NG-tube feeding, how should you confirm tube placement in a child?",
-   opts:["Verify placement per policy, such as pH testing or radiographic confirmation","Push air and listen over the stomach","Assume it's fine if the child isn't coughing","Confirm only by the external tube length"],
+   opts:["Verify placement per policy, such as pH testing","Ask the parent if it looks right","Assume it's fine if the child isn't coughing","Confirm only by the external tube length"],
    correct:0, why:"Auscultation is unreliable; pH or radiographic checks per policy prevent feeding into the lungs."},
   {q:"When should you perform hand hygiene while caring for an immunocompromised child?",
    opts:["Only when your hands look soiled","Before and after contact, before aseptic tasks, and after exposure to fluids or surroundings","Once at the start of the shift","Only after removing gloves"],
@@ -230,14 +230,11 @@ const LADDER_Q = [
    opts:["Grab whichever is closest since both are opioids","Carefully confirm the exact drug and concentration against the order","Use the one with the shorter name","Ask the family which they've had before"],
    correct:1, why:"These look-alike/sound-alike opioids are not interchangeable; confirm the exact drug and strength."},
   {q:"Before infusing a vesicant through a peripheral IV, what should you do?",
-   opts:["Confirm blood return and assess the site for patency before and during the infusion","Start it fast to finish before the child moves","Cover the site so the family can't see it","Skip the check if the IV was placed today"],
+   opts:["Flush and assess the site for patency before and during the infusion","Start it fast to finish before the child moves","Cover the site so the family can't see it","Skip the check if the IV was placed today"],
    correct:0, why:"Vesicant extravasation causes serious tissue injury; verify patency and monitor the site throughout."},
   {q:"A child has a documented penicillin allergy and an antibiotic is ordered. What should you do first?",
    opts:["Give it if the child looks well","Check the allergy band and record, and clarify the order before administering","Give a smaller dose to test the reaction","Ask the roommate's nurse for advice"],
-   correct:1, why:"Reconcile every order against documented allergies and clarify before giving to prevent anaphylaxis."},
-  {q:"Preparing for a possible pediatric resuscitation, what is a key safety step?",
-   opts:["Wait until the code is called to size equipment","Use adult equipment and adjust as you go","Confirm the code cart is checked and use a length-based (Broselow) tool for sizing and dosing","Estimate the child's weight by sight"],
-   correct:2, why:"Length-based tools give weight-appropriate equipment and drug doses, reducing errors in an emergency."}
+   correct:1, why:"Reconcile every order against documented allergies and clarify before giving to prevent anaphylaxis."}
 ];
 
 /* Chutes: select BOTH correct actions of four. Get both -> keep footing; miss -> slide. */
@@ -255,7 +252,7 @@ const CHUTE_Q = [
    opts:["Borrow a dose from another patient's supply to save time","Barcode-scan the patient and the medication","Separate look-alike/sound-alike drugs and use tall-man lettering","Pre-pour several patients' medications together"],
    correct:[1,2], why:"Scanning and LASA separation catch wrong-patient/wrong-drug errors. Borrowing and batch-pouring invite mix-ups."},
   {q:"For a safe shift handoff on the unit, select the TWO best practices.",
-   opts:["Use a structured tool (SBAR / I-PASS), ideally at the bedside","Hand off quickly in the hallway from memory","Review high-alert meds, lines/drains, and pending tasks together","Skip the medication review to save time"],
+   opts:["Use a structured tool (SBAR / I-PASS)","Hand off quickly in the hallway from memory","Review high-alert meds, lines/drains, and pending tasks together","Skip the medication review to save time"],
    correct:[0,2], why:"Structured, bedside handoffs with explicit review of high-risk items reduce dangerous omissions."},
   {q:"A child's heart rate is climbing and they are becoming less responsive. Select the TWO appropriate actions.",
    opts:["Escalate using the early-warning or rapid-response pathway","Wait for the next scheduled vitals to recheck","Silence the monitor and reassure the family it's fine","Reassess ABCs and notify the provider promptly"],
