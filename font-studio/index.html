@@ -117,7 +117,13 @@
   .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 24px; width: 560px; max-width: 92vw; display: flex; flex-direction: column; gap: 16px; }
   .modal-title { font-size: 14px; font-weight: 500; font-family: var(--mono); letter-spacing: .05em; }
   .modal-sub { font-size: 12px; color: var(--text2); line-height: 1.6; }
-  .modal-preview { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-height: 90px; max-height: 300px; display: flex; align-items: center; justify-content: center; background-color:#2a2a2a; background-image: linear-gradient(45deg,#3a3a3a 25%,transparent 25%),linear-gradient(-45deg,#3a3a3a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#3a3a3a 75%),linear-gradient(-45deg,transparent 75%,#3a3a3a 75%); background-size: 16px 16px; background-position: 0 0,0 8px,8px -8px,-8px 0; }
+  .modal-warn { display: none; flex-direction: column; align-items: flex-start; gap: 4px; background: rgba(255,180,0,0.10); border: 1px solid rgba(255,180,0,0.38); color: #ffcf66; border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.5; font-family: var(--mono); }
+  .modal-preview { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-height: 90px; max-height: 300px; display: flex; align-items: center; justify-content: center; }
+  .modal-preview.chk-dark { background-color:#2a2a2a; background-image: linear-gradient(45deg,#3a3a3a 25%,transparent 25%),linear-gradient(-45deg,#3a3a3a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#3a3a3a 75%),linear-gradient(-45deg,transparent 75%,#3a3a3a 75%); background-size: 16px 16px; background-position: 0 0,0 8px,8px -8px,-8px 0; }
+  .modal-preview.chk-light { background-color:#ffffff; background-image: linear-gradient(45deg,#cfcfcf 25%,transparent 25%),linear-gradient(-45deg,#cfcfcf 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#cfcfcf 75%),linear-gradient(-45deg,transparent 75%,#cfcfcf 75%); background-size: 16px 16px; background-position: 0 0,0 8px,8px -8px,-8px 0; }
+  .bd-row { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .bd-row span { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-right: auto; letter-spacing: .08em; text-transform: uppercase; }
+  .bd-row .align-btn { flex: 0 0 auto; padding: 5px 14px; }
   .modal-preview svg, .modal-preview img { max-width: 100%; max-height: 300px; display: block; }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
   a.dl-link { display: inline-block; padding: 7px 18px; border-radius: var(--radius); font-size: 12px; font-family: var(--mono); cursor: pointer; letter-spacing: .05em; text-decoration: none; text-align: center; transition: all .12s; background: var(--accent); color: #000; border: 1px solid var(--accent); font-weight: 500; }
@@ -214,7 +220,14 @@
   <div class="modal">
     <div class="modal-title" id="modal-title">Export</div>
     <div class="modal-sub" id="modal-sub"></div>
-    <div class="modal-preview" id="modal-preview"></div>
+    <div class="modal-warn" id="modal-warn"></div>
+    <div class="bd-row" id="bd-row">
+      <span>Preview backdrop</span>
+      <button class="align-btn active" data-bd="auto">Auto</button>
+      <button class="align-btn" data-bd="dark">Dark</button>
+      <button class="align-btn" data-bd="light">Light</button>
+    </div>
+    <div class="modal-preview chk-dark" id="modal-preview"></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">Cancel</button>
       <a class="dl-link" id="dl-btn" download>Download</a>
@@ -267,6 +280,8 @@ function rgb2hsv(r,g,b){
 function hex2rgb(hex){ hex=hex.replace('#',''); if(hex.length===3) hex=hex.split('').map(c=>c+c).join(''); const n=parseInt(hex,16); return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 }; }
 function rgb2hex(r,g,b){ return '#'+[r,g,b].map(x=>clamp(Math.round(x),0,255).toString(16).padStart(2,'0')).join(''); }
 function parseCssRgb(str){ const m=str.match(/(\d+(\.\d+)?)/g); if(!m) return {r:0,g:0,b:0}; return { r:+m[0], g:+m[1], b:+m[2] }; }
+function relLum(c){ const a=[c.r,c.g,c.b].map(v=>{ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }); return 0.2126*a[0]+0.7152*a[1]+0.0722*a[2]; }
+function contrast(c1,c2){ const L1=relLum(c1), L2=relLum(c2); const hi=Math.max(L1,L2), lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }
 
 /* ============================================================
    FONT REGISTRATION  (bundled + uploaded share one path)
@@ -447,6 +462,14 @@ function chooseFont(key){
   setFontButtonLabel(baseFontKey);
   markActiveFontItem(baseFontKey);
   editor.focus();
+}
+
+/* set every character's color at once (used by the export contrast fix) */
+function setAllTextColor(hex){
+  editor.querySelectorAll('span').forEach(sp => sp.style.removeProperty('color'));
+  editor.style.color = hex;
+  const c = hex2rgb(hex);
+  textColorCtl.setRGB(c.r, c.g, c.b, true);
 }
 
 /* slider session (size, spacing, line height) — avoids span build-up during drag */
@@ -820,7 +843,8 @@ function buildVectorSVG(){
   const byColor = new Map();
   placed.forEach(pl => {
     const ot = otFor(pl.c.fontKey); if(!ot) return;
-    const path = ot.getPath(pl.x, pl.baseline, pl.c.size);
+    const glyph = ot.charToGlyph(pl.c.ch);
+    const path = glyph.getPath(pl.x, pl.baseline, pl.c.size);
     const d = path.toPathData(3);
     if (!d || !d.trim()) return;
     if (!byColor.has(pl.c.color)) byColor.set(pl.c.color, []);
@@ -835,10 +859,37 @@ function buildVectorSVG(){
     parts.push(`  <path fill="${color}" d="${ds.join(' ')}"/>`);
   });
   parts.push('</svg>');
-  return { svg: parts.join('\n'), width: svgW, height: svgH };
+  const colors = Array.from(byColor.keys());
+  return { svg: parts.join('\n'), width: svgW, height: svgH, colors };
 }
 
 /* ---------- export modal ---------- */
+/* export preview backdrop (so text is visible regardless of its color) */
+let previewBackdrop = 'auto';        // 'auto' | 'dark' | 'light'
+let lastExportColors = [];
+function applyPreviewBackdrop(){
+  const pv = document.getElementById('modal-preview');
+  let mode = previewBackdrop;
+  if (mode === 'auto'){
+    if (currentBg){
+      mode = relLum(hex2rgb(currentBg)) > 0.5 ? 'light' : 'dark';   // match the solid bg
+    } else {
+      const tcs = (lastExportColors||[]).map(hex2rgb);
+      const avg = tcs.length ? tcs.reduce((a,c)=>a+relLum(c),0)/tcs.length : 1;
+      mode = avg < 0.5 ? 'light' : 'dark';                          // dark text -> light backdrop
+    }
+  }
+  pv.classList.remove('chk-dark','chk-light');
+  pv.classList.add(mode === 'light' ? 'chk-light' : 'chk-dark');
+}
+document.querySelectorAll('#bd-row .align-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    previewBackdrop = b.dataset.bd;
+    document.querySelectorAll('#bd-row .align-btn').forEach(x => x.classList.toggle('active', x === b));
+    applyPreviewBackdrop();
+  });
+});
+
 async function openExport(type){
   const modal = document.getElementById('modal');
   const previewEl = document.getElementById('modal-preview');
@@ -847,6 +898,7 @@ async function openExport(type){
   const subEl = document.getElementById('modal-sub');
 
   previewEl.innerHTML=''; subEl.textContent='Rendering…'; dlBtn.setAttribute('disabled','');
+  const _w=document.getElementById('modal-warn'); if(_w){ _w.style.display='none'; _w.innerHTML=''; }
   modal.classList.add('open');
   await new Promise(r=>setTimeout(r,30));
 
@@ -856,7 +908,36 @@ async function openExport(type){
   const text = (editor.innerText||'').trim();
   if (!text){ subEl.textContent='Type some text first.'; return; }
 
-  const { svg, width, height } = buildVectorSVG();
+  const { svg, width, height, colors } = buildVectorSVG();
+  lastExportColors = colors || [];
+  applyPreviewBackdrop();
+
+  // contrast guard — catches invisible text (e.g. light text on a white / blank background)
+  (function(){
+    const warnEl = document.getElementById('modal-warn');
+    warnEl.style.display='none'; warnEl.innerHTML='';
+    const tcs = (colors||[]).map(hex2rgb);
+    if (!tcs.length) return;
+    let mode=null, fixHex=null;
+    if (currentBg){
+      const bg = hex2rgb(currentBg);
+      const worst = Math.min(...tcs.map(c => contrast(c, bg)));
+      if (worst < 1.8){ mode='solid'; fixHex = relLum(bg) > 0.5 ? '#111111' : '#ffffff'; }
+    } else {
+      const avg = tcs.reduce((a,c)=>a+relLum(c),0) / tcs.length;
+      if (avg > 0.6){ mode='transp'; fixHex='#111111'; }
+    }
+    if (!mode) return;
+    const msg = (mode==='transp')
+      ? 'Your text is very light on a transparent background — it will look invisible on white or light backgrounds.'
+      : 'Your text color is almost identical to the background, so it looks invisible. The paths are still exported.';
+    warnEl.style.display='flex';
+    const p=document.createElement('div'); p.textContent='⚠ '+msg; warnEl.appendChild(p);
+    const btn=document.createElement('button'); btn.className='btn'; btn.style.marginTop='6px';
+    btn.textContent = (fixHex==='#111111') ? 'Switch text to black' : 'Switch text to white';
+    btn.onclick = () => { setAllTextColor(fixHex); openExport(type); };
+    warnEl.appendChild(btn);
+  })();
 
   if (type==='svg'){
     const wrap = document.createElement('div');
