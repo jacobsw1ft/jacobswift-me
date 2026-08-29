@@ -781,7 +781,7 @@ function otFor(key){
   const any = Object.values(FONTS).find(f=>f.ot); return any ? any.ot : null;
 }
 
-function buildVectorSVG(){
+function layoutGlyphs(){
   const lines = buildLines();
   const baseSize = parseFloat(getComputedStyle(editor).fontSize) || 72;
   const baseLhPx = (parseFloat(getComputedStyle(editor).lineHeight) || baseSize*1.15);
@@ -829,23 +829,21 @@ function buildVectorSVG(){
     else if (textAlign==='right')  startX = pad + (maxWidth - m.width);
     else                           startX = pad;
     let x = startX;
-    m.glyphs.forEach(g => {
-      placed.push({ c:g.c, x, baseline });
-      x += g.adv + g.c.lsPx;
-    });
+    m.glyphs.forEach(g => { placed.push({ c:g.c, x, baseline }); x += g.adv + g.c.lsPx; });
     cursorY += m.box;
   });
 
-  const svgW = Math.ceil(maxWidth + pad*2);
-  const svgH = Math.ceil(cursorY + pad);
+  return { placed, width: Math.ceil(maxWidth + pad*2), height: Math.ceil(cursorY + pad) };
+}
 
+function buildVectorSVG(){
+  const { placed, width, height } = layoutGlyphs();
   // group glyphs by color to keep the file compact
   const byColor = new Map();
   placed.forEach(pl => {
     const ot = otFor(pl.c.fontKey); if(!ot) return;
     const glyph = ot.charToGlyph(pl.c.ch);
-    const path = glyph.getPath(pl.x, pl.baseline, pl.c.size);
-    const d = path.toPathData(3);
+    const d = glyph.getPath(pl.x, pl.baseline, pl.c.size).toPathData(3);
     if (!d || !d.trim()) return;
     if (!byColor.has(pl.c.color)) byColor.set(pl.c.color, []);
     byColor.get(pl.c.color).push(d);
@@ -853,14 +851,36 @@ function buildVectorSVG(){
 
   const parts = [];
   parts.push('<?xml version="1.0" encoding="UTF-8"?>');
-  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`);
-  if (currentBg) parts.push(`  <rect width="${svgW}" height="${svgH}" fill="${currentBg}"/>`);
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`);
+  if (currentBg) parts.push(`  <rect width="${width}" height="${height}" fill="${currentBg}"/>`);
   byColor.forEach((ds, color) => {
     parts.push(`  <path fill="${color}" d="${ds.join(' ')}"/>`);
   });
   parts.push('</svg>');
-  const colors = Array.from(byColor.keys());
-  return { svg: parts.join('\n'), width: svgW, height: svgH, colors };
+  return { svg: parts.join('\n'), width, height, colors: Array.from(byColor.keys()) };
+}
+
+// Direct canvas raster for PNG — draws glyph vectors straight onto the canvas.
+// No SVG/blob <img> step, so it can't taint the canvas and works inside the
+// sandboxed Claude viewer as well as on a normal deployed origin.
+function renderGlyphsToCanvas(scale){
+  const { placed, width, height } = layoutGlyphs();
+  const canvas = document.createElement('canvas');
+  canvas.width  = Math.max(1, Math.round(width  * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+  if (currentBg){ ctx.fillStyle = currentBg; ctx.fillRect(0, 0, width, height); }
+  const colors = new Set();
+  placed.forEach(pl => {
+    const ot = otFor(pl.c.fontKey); if(!ot) return;
+    const glyph = ot.charToGlyph(pl.c.ch);
+    const path = glyph.getPath(pl.x, pl.baseline, pl.c.size);
+    path.fill = pl.c.color;
+    path.draw(ctx);
+    colors.add(pl.c.color);
+  });
+  return { canvas, width, height, colors: Array.from(colors) };
 }
 
 /* ---------- export modal ---------- */
@@ -953,26 +973,21 @@ async function openExport(type){
     dlBtn.textContent = 'Download SVG';
     dlBtn.removeAttribute('disabled');
   } else {
-    // rasterize the SAME vector SVG for a pixel-perfect PNG
+    // draw glyph vectors straight to a canvas (no SVG <img>, so no taint / sandbox issues)
     const scale = 3;
-    const img = new Image();
-    const blob = new Blob([svg], { type:'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = width*scale; canvas.height = height*scale;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      const pngUrl = canvas.toDataURL('image/png');
-      const pimg = document.createElement('img'); pimg.src=pngUrl; pimg.style.cssText='max-width:100%;max-height:300px;display:block;';
-      previewEl.appendChild(pimg);
-      titleEl.textContent = 'Export PNG';
-      subEl.textContent = `${width*scale} × ${height*scale}px — ${scale}× raster.` + (currentBg?'' : ' Transparent background.');
-      dlBtn.href = pngUrl; dlBtn.download='font-studio.png'; dlBtn.textContent='Download PNG'; dlBtn.removeAttribute('disabled');
-    };
-    img.onerror = () => { subEl.textContent='PNG render failed.'; URL.revokeObjectURL(url); };
-    img.src = url;
+    let pngUrl;
+    try {
+      const { canvas } = renderGlyphsToCanvas(scale);
+      pngUrl = canvas.toDataURL('image/png');
+    } catch(err){
+      subEl.textContent = 'PNG render failed: ' + (err && err.message ? err.message : err);
+      return;
+    }
+    const pimg = document.createElement('img'); pimg.src=pngUrl; pimg.style.cssText='max-width:100%;max-height:300px;display:block;';
+    previewEl.appendChild(pimg);
+    titleEl.textContent = 'Export PNG';
+    subEl.textContent = `${width*scale} × ${height*scale}px — ${scale}× raster.` + (currentBg?'' : ' Transparent background.');
+    dlBtn.href = pngUrl; dlBtn.download='font-studio.png'; dlBtn.textContent='Download PNG'; dlBtn.removeAttribute('disabled');
   }
 }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
