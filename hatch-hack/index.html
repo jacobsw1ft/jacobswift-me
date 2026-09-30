@@ -97,6 +97,13 @@
   .nl.on .nlbulb{background:radial-gradient(circle at 50% 38%, #ffe6bd, #ffab5c);
     box-shadow:0 0 30px 7px rgba(255,171,92,.72);border-color:#ffc98a}
 
+  /* nighttime sounds */
+  .snd .disc{width:50px;height:50px;border-radius:50%;flex:none;border:1px solid var(--border);
+    background:radial-gradient(circle at 50% 38%, #6b7486, #464e5e);display:grid;place-items:center;
+    font-size:22px;transition:.35s}
+  .snd.on .disc{background:radial-gradient(circle at 50% 38%, #cbd8ff, #7f9be2);
+    box-shadow:0 0 28px 6px rgba(127,155,226,.6);border-color:#9db3ee}
+
   /* iOS-style switch */
   .switch{position:relative;width:51px;height:31px;flex:none}
   .switch input{opacity:0;width:0;height:0}
@@ -217,6 +224,23 @@
   </div>
   <p class="sub" id="slotInfo" style="margin:4px 4px 8px">&nbsp;</p>
   <div id="alarmList"><p class="sub" style="padding:20px 4px">Loading…</p></div>
+
+  <h2>Nighttime sounds</h2>
+  <div class="card snd" id="sndCard">
+    <div class="nl">
+      <div class="disc">🎵</div>
+      <div style="flex:1">
+        <div style="font-weight:600">Play a sound</div>
+        <div class="sub" id="sndState">Nothing playing</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="sndToggle"><span class="slider"></span></label>
+    </div>
+    <button class="btn pickbtn" id="sndPick" style="margin-top:14px"><span id="sndLbl">Choose a sound…</span></button>
+    <div class="field" style="margin:14px 0 0">
+      <label>Volume: <b id="sndVolVal">40</b>%</label>
+      <input type="range" id="sndVol" min="0" max="100" step="1" value="40">
+    </div>
+  </div>
 </div>
 
 <!-- Editor modal -->
@@ -353,6 +377,7 @@ function enterApp(){
   $("#pin").classList.add("hidden");
   $("#app").classList.remove("hidden");
   loadAlarms();
+  refreshNight();
 }
 
 /* ---------- alarms ---------- */
@@ -443,6 +468,37 @@ $("#nlToggle").onchange=async e=>{
   catch(err){ e.target.checked=!on; $("#nlCard").classList.toggle("on",!on); handleErr(err,"Light failed"); }
   finally{ e.target.disabled=false; }
 };
+
+/* ---------- nighttime sounds (independent of the light) ---------- */
+let night = { sound:null, volume:40, on:false };
+try{ const s=JSON.parse(localStorage.getItem("hatchNight")||"null"); if(s){ night.sound=s.sound||null; night.volume=s.volume??40; } }catch(_){}
+function saveNight(){ try{ localStorage.setItem("hatchNight", JSON.stringify({sound:night.sound, volume:night.volume})); }catch(_){} }
+function refreshNight(){
+  $("#sndLbl").textContent = night.sound ? (night.sound.title||("Sound "+night.sound.hatchId)) : "Choose a sound…";
+  $("#sndVol").value = night.volume; $("#sndVolVal").textContent = night.volume;
+  $("#sndCard").classList.toggle("on", night.on);
+  $("#sndToggle").checked = night.on;
+  $("#sndState").textContent = night.on && night.sound ? `Playing · ${night.sound.title}` : "Nothing playing";
+}
+async function sendSound(on){
+  return api("/api/sound",{method:"POST",body:{on, sound: night.sound ? {hatchId:night.sound.hatchId, url:night.sound.url} : null, volume: night.volume}});
+}
+function setNightSound(val){
+  night.sound = val; saveNight(); refreshNight();
+  if(night.on){ sendSound(true).catch(err=>handleErr(err,"Couldn't switch sound")); }  // live-swap while playing
+}
+$("#sndPick").onclick=()=>openPicker("tracks","night");
+$("#sndToggle").onchange=async e=>{
+  const on=e.target.checked;
+  if(on && !night.sound){ e.target.checked=false; toast("Pick a sound first"); openPicker("tracks","night"); return; }
+  e.target.disabled=true; night.on=on; $("#sndCard").classList.toggle("on",on);
+  toast(on?"Starting…":"Stopping…");
+  try{ await sendSound(on); refreshNight(); toast(on?"Playing":"Stopped"); }
+  catch(err){ night.on=!on; e.target.checked=!on; refreshNight(); handleErr(err,"Sound failed"); }
+  finally{ e.target.disabled=false; }
+};
+$("#sndVol").oninput=e=>{ night.volume=+e.target.value; $("#sndVolVal").textContent=night.volume; };
+$("#sndVol").onchange=e=>{ night.volume=+e.target.value; saveNight(); if(night.on) sendSound(true).catch(err=>handleErr(err,"Volume failed")); };
 
 /* ---------- editor ---------- */
 function nextStart(wakeHHMM, lead){
@@ -569,23 +625,29 @@ async function ensureCatalog(){
                       ...present.filter(c=>!PRIORITY.includes(c)).sort()];
   catalog.colors=colors.sort((a,b)=>a.title.localeCompare(b.title));
 }
-let pickType="tracks", pickQuery="", pickCat="", playingId=null;
+let pickType="tracks", pickTarget="alarm", pickQuery="", pickCat="", playingId=null;
 const audio=$("#audio");
-async function openPicker(type){
-  pickType=type; pickQuery=""; $("#pickSearch").value="";
+async function openPicker(type, target="alarm"){
+  pickType=type; pickTarget=target; pickQuery=""; $("#pickSearch").value="";
   $("#pickTitle").textContent = type==="tracks"?"Choose a sound":"Choose a color";
   show("picker");
   try{ await ensureCatalog(); $("#pickStatus").classList.add("hidden");
     buildCatOptions(); renderPick();
   }catch(e){ $("#pickStatus").classList.remove("hidden"); $("#pickStatus").textContent="Catalog error: "+e.message; }
 }
+const AMBIENT_CAT="Ambient & Sleep Sounds";
 function buildCatOptions(){
   const sel=$("#pickCat");
   if(pickType!=="tracks"){ sel.classList.add("hidden"); return; }
   sel.classList.remove("hidden");
-  // Start in the current sound's category if known, else the first (Alarm Sounds).
-  const curCat = draft.sound && draft.sound.theme;
-  pickCat = (curCat && catalog.categories.includes(curCat)) ? curCat : catalog.categories[0];
+  // Night sounds default to the ambient category; alarms to the current sound's
+  // category if known, else the first (Alarm Sounds).
+  if(pickTarget==="night"){
+    pickCat = catalog.categories.includes(AMBIENT_CAT) ? AMBIENT_CAT : catalog.categories[0];
+  }else{
+    const curCat = draft.sound && draft.sound.theme;
+    pickCat = (curCat && catalog.categories.includes(curCat)) ? curCat : catalog.categories[0];
+  }
   sel.innerHTML = catalog.categories.map(c=>`<option value="${escape(c)}">${escape(c)}</option>`).join("")
     + `<option value="__all__">All sounds</option>`;
   sel.value=pickCat;
@@ -599,7 +661,7 @@ function renderPick(){
   if(pickType==="tracks" && pickCat!=="__all__" && !pickQuery)
     items=items.filter(t=>t.theme===pickCat);
   items=items.filter(i=>i.title.toLowerCase().includes(pickQuery));
-  const cur = pickType==="tracks"?draft.sound:draft.color;
+  const cur = pickType==="colors" ? draft.color : (pickTarget==="night" ? night.sound : draft.sound);
   items.slice(0,400).forEach(it=>{
     const el=document.createElement("div");
     el.className="pcard"+(cur&&cur.hatchId===it.hatchId?" sel":"");
@@ -626,7 +688,9 @@ function resetPlay(){document.querySelectorAll(".pcard .mini").forEach(b=>{b.cla
 audio.onended=()=>{playingId=null;resetPlay();};
 function choose(it){
   const val={hatchId:it.hatchId, contentfulId:it.sys.id, title:it.title, url:it.url, image:it.image&&it.image.url, theme:it.theme};
-  if(pickType==="tracks") draft.sound=val; else draft.color=val;
+  if(pickType==="colors"){ draft.color=val; }
+  else if(pickTarget==="night"){ setNightSound(val); }
+  else { draft.sound=val; }
   audio.pause(); playingId=null;
   hide("picker"); refreshColorLbl(); refreshSoundLbl();
 }
