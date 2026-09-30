@@ -104,6 +104,14 @@
   .snd.on .disc{background:radial-gradient(circle at 50% 38%, #cbd8ff, #7f9be2);
     box-shadow:0 0 28px 6px rgba(127,155,226,.6);border-color:#9db3ee}
 
+  /* "why / how to replicate" link */
+  .replink{display:inline-flex;align-items:center;gap:6px;color:#fff;font-size:13px;font-weight:600;
+    text-decoration:none;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);
+    border-radius:999px;padding:8px 15px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    text-shadow:0 1px 8px rgba(8,18,48,.3);transition:transform .08s ease,background .15s}
+  .replink:active{transform:scale(.97)}
+  .replink:hover{background:rgba(255,255,255,.26)}
+
   /* iOS-style switch */
   .switch{position:relative;width:51px;height:31px;flex:none}
   .switch input{opacity:0;width:0;height:0}
@@ -194,6 +202,7 @@
   <div>
     <h1 class="sky-title">Hatch Control</h1>
     <p class="sky-sub">Enter your PIN</p>
+    <a class="replink" style="margin-top:14px" href="https://github.com/jacobsw1ft/hatch-hack-public" target="_blank" rel="noopener">Why I built this &amp; how to replicate ↗</a>
   </div>
   <div id="pinDots"><span></span><span></span><span></span><span></span></div>
   <input id="pinField" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off">
@@ -207,6 +216,7 @@
     <div><h1 class="sky-title">Hatch Control</h1><p class="sky-sub" id="deviceName">…</p></div>
     <button class="circbtn" id="refreshBtn" aria-label="Refresh">↻</button>
   </div>
+  <a class="replink" style="margin:6px 0 2px" href="https://github.com/jacobsw1ft/hatch-hack-public" target="_blank" rel="noopener">Why I built this &amp; how to replicate ↗</a>
 
   <h2>Bedside lamp</h2>
   <div class="card nl" id="nlCard">
