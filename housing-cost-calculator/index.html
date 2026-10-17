@@ -3,17 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Housing Cost Calculator</title>
+<title>Rent vs Buy Calculator</title>
 <style>
   :root {
     --indigo-600:#4f46e5; --indigo-700:#4338ca; --indigo-50:#eef2ff; --indigo-100:#e0e7ff;
     --gray-800:#1f2937; --gray-700:#374151; --gray-600:#4b5563; --gray-500:#6b7280;
     --gray-300:#d1d5db; --gray-200:#e5e7eb; --gray-50:#f9fafb;
     --red-600:#dc2626; --red-700:#b91c1c;
-    --green-600:#16a34a; --green-700:#15803d;
+    --green-600:#16a34a; --green-700:#15803d; --green-50:#f0fdf4;
     --blue-50:#eff6ff; --blue-700:#1d4ed8;
     --purple-50:#faf5ff; --purple-700:#7e22ce;
     --orange-700:#c2410c;
+    --amber-600:#d97706; --amber-50:#fffbeb; --amber-200:#fde68a;
+    --buy:#4f46e5; --rent:#d97706;
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
@@ -36,9 +38,14 @@
     margin-bottom: 32px;
   }
 
-  .title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
   .title-row h1 { font-size: clamp(1.4rem, 4vw, 1.875rem); font-weight: 700; margin: 0; color: var(--gray-800); }
-  h2.section { font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 700; margin: 0 0 24px; color: var(--gray-800); }
+  .subtitle { margin: 0 0 24px; color: var(--gray-600); font-size: .95rem; }
+  h2.section { font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 700; margin: 0 0 24px; color: var(--gray-800); display: flex; align-items: center; gap: 10px; }
+  h2.section .tag { font-size: .7rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+  .tag-buy { background: var(--indigo-100); color: var(--indigo-700); }
+  .tag-rent { background: var(--amber-50); color: #92400e; border: 1px solid var(--amber-200); }
+  .section-note { margin: -16px 0 20px; font-size: .85rem; color: var(--gray-500); }
 
   .icon { width: 1.25rem; height: 1.25rem; flex: none; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
   .icon-lg { width: 2rem; height: 2rem; color: var(--indigo-600); }
@@ -54,15 +61,79 @@
     display: flex; align-items: center; gap: 8px;
     font-size: .875rem; font-weight: 500; color: var(--gray-700); margin-bottom: 8px;
   }
-  .field input[type=number] {
+  .field input[type=number], .field input[type=text], .profile-bar select, .profile-bar input[type=text] {
     width: 100%; padding: 8px 14px; font-size: 1rem;
     border: 1px solid var(--gray-300); border-radius: 8px; background:#fff; color: var(--gray-800);
+    font-family: inherit;
   }
-  .field input[type=number]:focus {
+  .field input:focus, .profile-bar select:focus, .profile-bar input:focus {
     outline: none; border-color: transparent; box-shadow: 0 0 0 2px var(--indigo-600);
   }
   .field input[type=range] { width: 100%; margin-top: 8px; accent-color: var(--indigo-600); }
   .hint { font-size: .75rem; color: var(--gray-500); margin: 6px 0 0; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: var(--gray-700); font-weight: 500; cursor: pointer; }
+  .check input { width: 18px; height: 18px; accent-color: var(--indigo-600); }
+
+  /* Buttons */
+  .btn {
+    font: inherit; font-size: .875rem; font-weight: 600; padding: 9px 14px; border-radius: 8px;
+    border: 1px solid var(--gray-300); background: #fff; color: var(--gray-700); cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { background: var(--gray-50); }
+  .btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--indigo-600); }
+  .btn-primary { background: var(--indigo-600); border-color: var(--indigo-600); color: #fff; }
+  .btn-primary:hover { background: var(--indigo-700); }
+  .btn-danger { color: var(--red-700); }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  /* Rental profile bar */
+  .profile-bar {
+    display: grid; gap: 12px; padding: 16px; margin-bottom: 24px;
+    background: var(--amber-50); border: 1px solid var(--amber-200); border-radius: 12px;
+  }
+  .profile-bar .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .profile-bar .row > select, .profile-bar .row > input { flex: 1 1 200px; min-width: 0; }
+  .profile-bar .pb-title { font-size: .875rem; font-weight: 600; color: #92400e; }
+  .profile-status { font-size: .8rem; color: var(--gray-600); min-height: 1em; }
+
+  /* Verdict */
+  .verdict { padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+  .verdict.buy { background: var(--indigo-50); border: 2px solid #c7d2fe; }
+  .verdict.rent { background: var(--amber-50); border: 2px solid var(--amber-200); }
+  .verdict .v-big { font-size: clamp(1.3rem, 3.5vw, 1.75rem); font-weight: 700; margin: 0 0 6px; }
+  .verdict .v-sub { margin: 0; color: var(--gray-600); font-size: .95rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat { padding: 16px; border: 1px solid var(--gray-200); border-radius: 12px; }
+  .stat .s-k { font-size: .8rem; color: var(--gray-600); font-weight: 500; }
+  .stat .s-v { font-size: 1.35rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stat .s-n { font-size: .75rem; color: var(--gray-500); margin-top: 4px; }
+
+  /* Chart */
+  .chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .chart-head h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+  .legend { display: flex; gap: 16px; font-size: .8rem; color: var(--gray-700); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
+  .chart-wrap { position: relative; }
+  #nwChart { width: 100%; height: 300px; display: block; touch-action: pan-y; }
+  #nwChart text { font-size: 11px; fill: var(--gray-500); font-variant-numeric: tabular-nums; }
+  #nwChart .grid line { stroke: var(--gray-200); stroke-width: 1; }
+  #nwChart .zero { stroke: var(--gray-300); stroke-width: 1; }
+  .tooltip {
+    position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--gray-200);
+    border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.12); padding: 8px 10px; font-size: .8rem;
+    min-width: 170px; display: none; z-index: 5;
+  }
+  .tooltip .t-h { font-weight: 700; margin-bottom: 4px; }
+  .tooltip .t-r { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+  .tooltip .t-r i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+  details.more { margin-top: 20px; }
+  details.more summary { cursor: pointer; font-weight: 600; font-size: .9rem; color: var(--indigo-700); }
+  .simple-table { width: 100%; border-collapse: collapse; font-size: .875rem; min-width: 640px; font-variant-numeric: tabular-nums; }
+  .simple-table th, .simple-table td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+  .simple-table th:first-child, .simple-table td:first-child { text-align: left; }
+  .simple-table th { font-weight: 600; color: var(--gray-700); background: var(--gray-50); }
 
   /* 5-year table: horizontal scroll on narrow screens, sticky label column */
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -87,6 +158,17 @@
   .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; font-size: .875rem; }
   .insights-grid .k { font-weight: 500; color: var(--gray-700); }
 
+  /* Commute results */
+  .commute-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 24px; }
+  .commute-card { padding: 20px; border-radius: 12px; }
+  .commute-card.rent { background: var(--amber-50); border: 1px solid var(--amber-200); }
+  .commute-card.buy { background: var(--indigo-50); border: 1px solid #c7d2fe; }
+  .commute-card.diff { background: var(--gray-50); border: 1px solid var(--gray-200); }
+  .commute-card h4 { margin: 0 0 10px; font-size: .9rem; }
+  .commute-card .big { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .commute-card .unit { font-size: .8rem; color: var(--gray-600); }
+  .commute-card ul { list-style: none; padding: 0; margin: 10px 0 0; font-size: .85rem; color: var(--gray-700); display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+
   /* Scenario cards — stack on mobile */
   .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 24px; }
   .scenario { padding: 24px; border-radius: 12px; text-align: center; }
@@ -97,23 +179,31 @@
   .sc-lower { background: var(--blue-50); } .sc-lower .sc-big { color: var(--blue-700); }
   .sc-base  { background: var(--indigo-100); border: 2px solid #818cf8; } .sc-base .sc-big { color: var(--indigo-700); }
   .sc-higher{ background: var(--purple-50); } .sc-higher .sc-big { color: var(--purple-700); }
+
+  .method { font-size: .875rem; color: var(--gray-700); }
+  .method li { margin-bottom: 6px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--gray-800); color: #fff;
+    padding: 10px 16px; border-radius: 8px; font-size: .875rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- Inputs -->
+  <!-- The home -->
   <div class="card">
     <div class="title-row">
       <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <h1>Housing Cost Calculator</h1>
+      <h1>Rent vs Buy Calculator</h1>
     </div>
+    <p class="subtitle">See what a home really costs each month, and whether buying it beats renting once you count equity, opportunity cost, selling costs, and your commute.</p>
 
+    <h2 class="section">The home <span class="tag tag-buy">Buy</span></h2>
     <div class="inputs-grid">
       <div class="field">
         <label><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Home Price</label>
         <input type="number" id="homePrice" value="400000">
-        <input type="range" id="homePrice_r" min="100000" max="1000000" step="5000" value="400000">
+        <input type="range" id="homePrice_r" min="100000" max="1500000" step="5000" value="400000">
       </div>
 
       <div class="field">
@@ -152,12 +242,159 @@
         <label><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Annual Maintenance (% of home price)</label>
         <input type="number" id="maintenancePercent" value="1" step="0.1">
       </div>
+
+      <div class="field">
+        <label>Extra Utilities vs Renting (monthly)</label>
+        <input type="number" id="extraUtilities" value="0">
+        <p class="hint">Costs a renter wouldn't pay: water, trash, a bigger electric bill.</p>
+      </div>
+
+      <div class="field">
+        <label>PMI (% of loan per year)</label>
+        <input type="number" id="pmiRate" value="0.5" step="0.05">
+        <p class="hint">Charged only while you have under 20% equity; drops off at 22%.</p>
+      </div>
+
+      <div class="field">
+        <label>Closing Costs When Buying (%)</label>
+        <input type="number" id="closingPct" value="3" step="0.5">
+        <p class="hint" id="closingHint"></p>
+      </div>
+
+      <div class="field">
+        <label>Selling Costs (% of sale price)</label>
+        <input type="number" id="sellingPct" value="6" step="0.5">
+        <p class="hint">Agent commissions, transfer taxes, and fees when you sell.</p>
+      </div>
     </div>
+  </div>
+
+  <!-- The rental -->
+  <div class="card">
+    <h2 class="section">Your rental <span class="tag tag-rent">Rent</span></h2>
+
+    <div class="profile-bar">
+      <div class="pb-title">Rental profiles</div>
+      <div class="row">
+        <select id="profileSelect" aria-label="Saved rental profile"></select>
+        <button class="btn btn-danger" id="profileDelete" type="button">Delete</button>
+      </div>
+      <div class="row">
+        <input type="text" id="profileName" placeholder="Name this rental, e.g. My apartment" maxlength="60" aria-label="Profile name">
+        <button class="btn btn-primary" id="profileSave" type="button">Save profile</button>
+      </div>
+      <div class="profile-status" id="profileStatus">Profiles are saved in this browser. Your last-used profile loads automatically.</div>
+    </div>
+
+    <div class="inputs-grid">
+      <div class="field">
+        <label>Monthly Rent</label>
+        <input type="number" id="monthlyRent" value="2200">
+      </div>
+      <div class="field">
+        <label>Renters Insurance (monthly)</label>
+        <input type="number" id="rentersInsurance" value="20">
+      </div>
+      <div class="field">
+        <label>Annual Rent Increase (%)</label>
+        <input type="number" id="rentGrowth" value="3" step="0.5">
+      </div>
+      <div class="field">
+        <label>One-Time Move-In Costs</label>
+        <input type="number" id="moveInCosts" value="0">
+        <p class="hint">Broker fees, non-refundable deposits. Refundable deposits don't count.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Commute -->
+  <div class="card">
+    <h2 class="section">Commute</h2>
+    <p class="section-note">Average one-way commute from each place. Time adds up quickly, so here it is in hours.</p>
+    <div class="inputs-grid">
+      <div class="field">
+        <label><span class="tag tag-rent" style="font-size:.65rem;padding:2px 6px;border-radius:999px">Rent</span> One-way commute from the rental (min)</label>
+        <input type="number" id="rentCommute" value="20">
+      </div>
+      <div class="field">
+        <label><span class="tag tag-buy" style="font-size:.65rem;padding:2px 6px;border-radius:999px">Buy</span> One-way commute from the home (min)</label>
+        <input type="number" id="buyCommute" value="35">
+      </div>
+      <div class="field">
+        <label>Commute days per week</label>
+        <input type="number" id="commuteDays" value="5" step="0.5" min="0" max="7">
+      </div>
+      <div class="field">
+        <label>What's an hour of your time worth? ($)</label>
+        <input type="number" id="timeValue" value="25">
+        <label class="check" style="margin-top:12px"><input type="checkbox" id="includeCommute"> Count commute time in the rent vs buy result</label>
+      </div>
+    </div>
+    <div class="commute-grid" id="commuteResults"></div>
+  </div>
+
+  <!-- Assumptions -->
+  <div class="card">
+    <h2 class="section">Assumptions</h2>
+    <div class="inputs-grid">
+      <div class="field">
+        <label>How long you'd stay (years)</label>
+        <input type="number" id="horizon" value="7" min="1" max="30">
+        <input type="range" id="horizon_r" min="1" max="30" step="1" value="7">
+      </div>
+      <div class="field">
+        <label>Home Price Growth (% per year)</label>
+        <input type="number" id="appreciation" value="3" step="0.5">
+      </div>
+      <div class="field">
+        <label>Investment Return (% per year)</label>
+        <input type="number" id="investReturn" value="5" step="0.5">
+        <p class="hint">What your down payment and monthly savings would earn if invested instead. Use an after-tax figure.</p>
+      </div>
+      <div class="field">
+        <label>Cost Inflation (% per year)</label>
+        <input type="number" id="inflation" value="3" step="0.5">
+        <p class="hint">Applied to insurance, HOA, and utilities. Property tax and maintenance follow the home's value.</p>
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" id="itemize"> I itemize deductions</label>
+        <label style="margin-top:12px">Marginal Tax Rate (%)</label>
+        <input type="number" id="taxRate" value="24" step="1">
+        <p class="hint">Only used if you itemize. Deducts mortgage interest and property tax at this rate.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="card">
+    <h2 class="section">Rent vs Buy</h2>
+    <div class="verdict" id="verdict"><p class="v-big" id="v_big"></p><p class="v-sub" id="v_sub"></p></div>
+
+    <div class="stats">
+      <div class="stat"><div class="s-k">Break-even point</div><div class="s-v" id="st_be"></div><div class="s-n" id="st_be_n"></div></div>
+      <div class="stat"><div class="s-k">Break-even rent</div><div class="s-v" id="st_ber"></div><div class="s-n" id="st_ber_n"></div></div>
+      <div class="stat"><div class="s-k">Month-one cost: buy vs rent</div><div class="s-v" id="st_m1"></div><div class="s-n" id="st_m1_n"></div></div>
+      <div class="stat"><div class="s-k">Money you don't get back (year 1, monthly)</div><div class="s-v" id="st_unrec"></div><div class="s-n">Interest, tax, upkeep, insurance, HOA, PMI, utilities and lost investment return, vs rent.</div></div>
+    </div>
+
+    <div class="chart-head">
+      <h3>Net worth if you sell and move out, by year</h3>
+      <div class="legend"><span><i style="background:var(--buy)"></i>Buy</span><span><i style="background:var(--rent)"></i>Rent &amp; invest</span></div>
+    </div>
+    <div class="chart-wrap">
+      <svg id="nwChart" role="img" aria-label="Net worth of buying versus renting over time"></svg>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <details class="more">
+      <summary>Year-by-year table</summary>
+      <div class="table-scroll" style="margin-top:12px"><table class="simple-table" id="yearTable"></table></div>
+    </details>
   </div>
 
   <!-- 5-Year Breakdown -->
   <div class="card">
-    <h2 class="section">5-Year Cost Breakdown</h2>
+    <h2 class="section">5-Year Monthly Cost Breakdown</h2>
     <div class="table-scroll">
       <div class="cost-table" id="costTable"><!-- generated --></div>
     </div>
@@ -169,6 +406,8 @@
         <div><span class="k">Down Payment:</span> <span id="i_down"></span></div>
         <div><span class="k">Total Equity Built (5 years):</span> <span id="i_equity" style="color:var(--green-600);font-weight:600"></span></div>
         <div><span class="k">Total Interest Paid (5 years):</span> <span id="i_interest" style="color:var(--red-600);font-weight:600"></span></div>
+        <div><span class="k">Cash Needed at Closing:</span> <span id="i_cash"></span></div>
+        <div><span class="k">Total Rent Paid (5 years):</span> <span id="i_rent" style="color:var(--orange-700);font-weight:600"></span></div>
       </div>
     </div>
   </div>
@@ -198,7 +437,20 @@
     </div>
   </div>
 
+  <!-- Method -->
+  <div class="card">
+    <h2 class="section">How the comparison works</h2>
+    <ul class="method">
+      <li>Both paths start with the same money. The buyer spends the down payment and closing costs; the renter invests that cash instead (minus any move-in costs).</li>
+      <li>Each month, whichever path costs less invests the difference at your investment return. Buying costs include mortgage, property tax, insurance, HOA, maintenance, and PMI, minus any tax savings. Renting costs are rent and renters insurance, rising each year.</li>
+      <li>At the end, the buyer sells: home value minus selling costs minus the remaining loan, plus any investments. The renter keeps their investments. The higher net worth wins.</li>
+      <li>Break-even rent is the starting rent at which both paths finish even over your time frame. If you can rent for less than that, renting comes out ahead.</li>
+      <li>Simplifications: no capital gains tax on the home (most sales fall under the primary-residence exclusion), and the investment return should already be after tax. Commute time only enters the result if you tick the box above.</li>
+    </ul>
+  </div>
+
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function () {
@@ -208,15 +460,41 @@
     style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0
   });
   var money = function (v) { if (!isFinite(v)) v = 0; return fmt.format(v); };
+  var compact = function (v) {
+    var a = Math.abs(v), s = v < 0 ? '-' : '';
+    if (a >= 1e6) return s + '$' + (a / 1e6).toFixed(a >= 1e7 ? 0 : 1) + 'M';
+    if (a >= 1e3) return s + '$' + Math.round(a / 1e3) + 'k';
+    return s + '$' + Math.round(a);
+  };
+  var hrs = function (h) { return (Math.round(h * 10) / 10).toLocaleString('en-US') + ' hrs'; };
 
-  var ids = ['homePrice','downPayment','loanTerm','interestRate','annualInsurance','annualTax','monthlyHOA','maintenancePercent'];
+  var ids = ['homePrice','downPayment','loanTerm','interestRate','annualInsurance','annualTax','monthlyHOA','maintenancePercent',
+             'extraUtilities','pmiRate','closingPct','sellingPct',
+             'monthlyRent','rentersInsurance','rentGrowth','moveInCosts',
+             'rentCommute','buyCommute','commuteDays','timeValue',
+             'horizon','appreciation','investReturn','inflation','taxRate'];
+  var checks = ['includeCommute','itemize'];
+  // Fields that belong to a saved rental profile.
+  var profileFields = ['monthlyRent','rentersInsurance','rentGrowth','moveInCosts','rentCommute','commuteDays'];
+
   var el = {};
-  ids.forEach(function (id) { el[id] = document.getElementById(id); });
+  ids.concat(checks).forEach(function (id) { el[id] = document.getElementById(id); });
   var homePrice_r = document.getElementById('homePrice_r');
   var downPayment_r = document.getElementById('downPayment_r');
+  var horizon_r = document.getElementById('horizon_r');
 
   function num(id) { var v = parseFloat(el[id].value); return isNaN(v) ? 0 : v; }
 
+  // ---------- Storage (wrapped: private windows can throw) ----------
+  var STATE_KEY = 'rvb.state.v1', PROFILES_KEY = 'rvb.profiles.v1', LAST_PROFILE_KEY = 'rvb.lastProfile.v1';
+  function load(key, fallback) {
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+  }
+  function save(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; }
+  }
+
+  // ---------- Mortgage math (unchanged from the original calculator) ----------
   function mortgage(price, downPayment, interestRate, loanTerm) {
     var principal = price - downPayment;
     var monthlyRate = interestRate / 100 / 12;
@@ -233,6 +511,11 @@
     return { principal: principal, monthlyPayment: monthlyPayment, monthlyRate: monthlyRate };
   }
 
+  function monthlyPMI(price, s) {
+    var loan = price - s.downPayment;
+    return loan > 0.8 * price ? loan * s.pmiRate / 100 / 12 : 0;
+  }
+
   function yearly(price, s) {
     var m = mortgage(price, s.downPayment, s.interestRate, s.loanTerm);
     var monthlyTax = s.annualTax / 12;
@@ -241,12 +524,14 @@
     var remaining = m.principal;
     var out = [];
     for (var y = 1; y <= 5; y++) {
-      var yInt = 0, yPrin = 0;
+      var yInt = 0, yPrin = 0, yPmi = 0;
       for (var mo = 1; mo <= 12; mo++) {
+        if (remaining > 0.78 * price && m.principal > 0.8 * price) yPmi += m.principal * s.pmiRate / 100 / 12;
         var interest = remaining * m.monthlyRate;
         var prin = m.monthlyPayment - interest;
         yInt += interest; yPrin += prin; remaining -= prin;
       }
+      var rent = s.monthlyRent * Math.pow(1 + s.rentGrowth / 100, y - 1);
       out.push({
         year: y,
         monthlyInterest: yInt / 12,
@@ -255,8 +540,11 @@
         monthlyHOA: s.monthlyHOA,
         monthlyMaintenance: monthlyMaintenance,
         monthlyInsurance: monthlyInsurance,
-        totalMonthly: m.monthlyPayment + monthlyTax + s.monthlyHOA + monthlyMaintenance + monthlyInsurance,
-        remainingBalance: remaining
+        monthlyPMI: yPmi / 12,
+        monthlyUtilities: s.extraUtilities,
+        totalMonthly: m.monthlyPayment + monthlyTax + s.monthlyHOA + monthlyMaintenance + monthlyInsurance + yPmi / 12 + s.extraUtilities,
+        remainingBalance: remaining,
+        monthlyRent: rent + s.rentersInsurance
       });
     }
     return out;
@@ -265,25 +553,114 @@
   function scenario(adj, s) {
     var price = s.homePrice + adj;
     var mp = mortgage(price, s.downPayment, s.interestRate, s.loanTerm).monthlyPayment;
-    return mp + s.annualTax / 12 + s.monthlyHOA + (price * s.maintenancePercent / 100) / 12 + s.annualInsurance / 12;
+    return mp + s.annualTax / 12 + s.monthlyHOA + (price * s.maintenancePercent / 100) / 12 + s.annualInsurance / 12 + monthlyPMI(price, s) + s.extraUtilities;
   }
 
+  // ---------- Commute ----------
+  function commuteHoursPerMonth(minutesOneWay, days) {
+    return minutesOneWay * 2 / 60 * days * 52 / 12;
+  }
+
+  // ---------- Rent vs buy simulation ----------
+  // Monthly simulation. Both paths start with the same cash; whichever path
+  // is cheaper each month invests the difference. Returns year-end snapshots.
+  function simulate(s, startRent, years) {
+    var price = s.homePrice;
+    var m = mortgage(price, s.downPayment, s.interestRate, s.loanTerm);
+    var loan = Math.max(0, m.principal);
+    var pmiOn = loan > 0.8 * price;
+    var appM = Math.pow(1 + s.appreciation / 100, 1 / 12) - 1;
+    var invM = Math.pow(1 + s.investReturn / 100, 1 / 12) - 1;
+    var closing = price * s.closingPct / 100;
+    var sell = s.sellingPct / 100;
+
+    var commuteBuy = 0, commuteRent = 0;
+    if (s.includeCommute) {
+      commuteBuy = commuteHoursPerMonth(s.buyCommute, s.commuteDays) * s.timeValue;
+      commuteRent = commuteHoursPerMonth(s.rentCommute, s.commuteDays) * s.timeValue;
+    }
+
+    var bal = loan, value = price;
+    var buyPort = 0, rentPort = s.downPayment + closing - s.moveInCosts;
+    var out = [{ year: 0, homeValue: value, balance: bal, buyNW: value * (1 - sell) - bal, rentNW: rentPort,
+                 buyCost: 0, rentCost: 0 }];
+    var yBuy = 0, yRent = 0;
+
+    for (var mo = 1; mo <= years * 12; mo++) {
+      var yi = Math.floor((mo - 1) / 12);
+      var infl = Math.pow(1 + s.inflation / 100, yi);
+      var rent = startRent * Math.pow(1 + s.rentGrowth / 100, yi);
+
+      var interest = 0, principal = 0;
+      if (bal > 0.005) {
+        interest = bal * m.monthlyRate;
+        principal = Math.min(bal, m.monthlyPayment - interest);
+        bal -= principal;
+      }
+      var tax = s.annualTax / 12 * (value / price);
+      var maint = value * s.maintenancePercent / 100 / 12;
+      var pmi = (pmiOn && bal + principal > 0.78 * price) ? loan * s.pmiRate / 100 / 12 : 0;
+      var taxBack = s.itemize ? (interest + tax) * s.taxRate / 100 : 0;
+
+      var buyCost = interest + principal + tax + maint + pmi + (s.annualInsurance / 12 + s.monthlyHOA + s.extraUtilities) * infl - taxBack + commuteBuy * infl;
+      var rentCost = rent + s.rentersInsurance * infl + commuteRent * infl;
+
+      buyPort *= 1 + invM;
+      rentPort *= 1 + invM;
+      var diff = buyCost - rentCost;
+      if (diff > 0) rentPort += diff; else buyPort -= diff;
+
+      value *= 1 + appM;
+      yBuy += buyCost; yRent += rentCost;
+
+      if (mo % 12 === 0) {
+        out.push({ year: mo / 12, homeValue: value, balance: bal,
+                   buyNW: value * (1 - sell) - bal + buyPort, rentNW: rentPort,
+                   buyCost: yBuy, rentCost: yRent });
+        yBuy = 0; yRent = 0;
+      }
+    }
+    return out;
+  }
+
+  function advantageAt(s, rent, years) {
+    var r = simulate(s, rent, years);
+    var last = r[r.length - 1];
+    return last.buyNW - last.rentNW;
+  }
+
+  // Starting rent where both paths finish even. Buy advantage rises with rent.
+  function breakEvenRent(s, years) {
+    var lo = 0, hi = Math.max(1000, s.homePrice * 0.05);
+    if (advantageAt(s, lo, years) >= 0) return 0;
+    var guard = 0;
+    while (advantageAt(s, hi, years) < 0 && guard++ < 20) hi *= 2;
+    for (var i = 0; i < 40; i++) {
+      var mid = (lo + hi) / 2;
+      if (advantageAt(s, mid, years) < 0) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  // ---------- 5-year table (original layout, plus PMI and a rent comparison row) ----------
   var rows = [
     { label: 'Interest',            key: 'monthlyInterest',    color: 'var(--red-700)' },
     { label: 'Principal (Equity)',  key: 'monthlyPrincipal',   color: 'var(--green-700)' },
     { label: 'Homeowners Insurance',key: 'monthlyInsurance',   color: 'var(--indigo-700)' },
     { label: 'Property Tax',        key: 'monthlyTax',         color: 'var(--blue-700)' },
     { label: 'HOA Fees',            key: 'monthlyHOA',         color: 'var(--purple-700)' },
-    { label: 'Maintenance',         key: 'monthlyMaintenance', color: 'var(--orange-700)' }
+    { label: 'Maintenance',         key: 'monthlyMaintenance', color: 'var(--orange-700)' },
+    { label: 'PMI',                 key: 'monthlyPMI',         color: 'var(--gray-600)' },
+    { label: 'Extra Utilities',     key: 'monthlyUtilities',   color: 'var(--gray-600)' }
   ];
 
-  // Build the table skeleton once; keep references to the value cells.
   var table = document.getElementById('costTable');
-  var refs = { total: [], rows: {}, remaining: [] };
+  var refs = { total: [], rows: {}, remaining: [], rent: [] };
 
   function bgFor(kind, rowIndex) {
     if (kind === 'total') return 'var(--gray-50)';
     if (kind === 'remaining') return 'var(--indigo-50)';
+    if (kind === 'rent') return 'var(--amber-50)';
     if (kind === 'row') return rowIndex % 2 === 1 ? 'var(--gray-50)' : '#fff';
     return '#fff';
   }
@@ -295,31 +672,27 @@
     if (text != null) d.innerHTML = text;
     return d;
   }
+  function dividerRow(cls) {
+    var d = makeCell('', '', '#fff'); d.style.gridColumn = '1 / -1';
+    d.innerHTML = '<div class="' + cls + '" style="width:100%"></div>'; d.style.padding = '0';
+    table.appendChild(d);
+  }
 
   function buildTable() {
-    // Header
     table.appendChild(makeCell('<span style="font-weight:600;color:var(--gray-700)">Category</span>', 'label head', '#fff'));
     for (var y = 1; y <= 5; y++) {
       table.appendChild(makeCell('<div><div class="year-h">Year ' + y + '</div><div class="year-sub">Monthly</div></div>', 'head', '#fff'));
     }
-    // divider (full-width via spanning)
-    var d1 = makeCell('', '', '#fff'); d1.style.gridColumn = '1 / -1';
-    d1.innerHTML = '<div class="divider" style="width:100%"></div>';
-    d1.style.padding = '0'; table.appendChild(d1);
+    dividerRow('divider');
 
-    // Total row
     table.appendChild(makeCell('Total Payment', 'label', bgFor('total'), 'var(--gray-700)'));
     for (var t = 0; t < 5; t++) {
       var c = makeCell('', '', bgFor('total'), 'var(--gray-800)');
       c.style.fontWeight = '700'; c.style.fontSize = '1.15rem';
       refs.total.push(c); table.appendChild(c);
     }
+    dividerRow('divider-thin');
 
-    var d2 = makeCell('', '', '#fff'); d2.style.gridColumn = '1 / -1';
-    d2.innerHTML = '<div class="divider-thin" style="width:100%"></div>'; d2.style.padding = '0';
-    table.appendChild(d2);
-
-    // Category rows
     rows.forEach(function (row, ri) {
       var bg = bgFor('row', ri);
       table.appendChild(makeCell(row.label, 'label', bg, 'var(--gray-600)'));
@@ -331,80 +704,321 @@
         table.appendChild(cell);
       }
     });
+    dividerRow('divider');
 
-    var d3 = makeCell('', '', '#fff'); d3.style.gridColumn = '1 / -1';
-    d3.innerHTML = '<div class="divider" style="width:100%"></div>'; d3.style.padding = '0';
-    table.appendChild(d3);
-
-    // Remaining balance row
     table.appendChild(makeCell('Remaining Balance', 'label', bgFor('remaining'), 'var(--gray-700)'));
     for (var r = 0; r < 5; r++) {
       var rc = makeCell('', '', bgFor('remaining'), 'var(--gray-700)');
       rc.style.fontWeight = '600';
       refs.remaining.push(rc); table.appendChild(rc);
     }
+
+    table.appendChild(makeCell('Rent + Renters Ins. (compare)', 'label', bgFor('rent'), 'var(--gray-700)'));
+    for (var q = 0; q < 5; q++) {
+      var qc = makeCell('', '', bgFor('rent'), '#92400e');
+      qc.style.fontWeight = '600';
+      refs.rent.push(qc); table.appendChild(qc);
+    }
+  }
+
+  // ---------- Chart ----------
+  var svg = document.getElementById('nwChart');
+  var tip = document.getElementById('tooltip');
+  var chartData = [];
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function sv(tag, attrs, parent) {
+    var n = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function niceStep(range, ticks) {
+    var raw = range / ticks, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag;
+  }
+  var geom = null;
+
+  function drawChart(data) {
+    chartData = data;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var W = svg.clientWidth || 600, H = 300;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var pad = { l: 56, r: W < 480 ? 16 : 96, t: 12, b: 28 };
+    var vals = [];
+    data.forEach(function (d) { vals.push(d.buyNW, d.rentNW); });
+    var min = Math.min(0, Math.min.apply(null, vals)), max = Math.max(0, Math.max.apply(null, vals));
+    if (max === min) max = min + 1;
+    var step = niceStep(max - min, 5);
+    min = Math.floor(min / step) * step; max = Math.ceil(max / step) * step;
+    var n = data.length - 1 || 1;
+    var x = function (i) { return pad.l + (W - pad.l - pad.r) * i / n; };
+    var y = function (v) { return pad.t + (H - pad.t - pad.b) * (1 - (v - min) / (max - min)); };
+    geom = { x: x, y: y, pad: pad, W: W, H: H, n: n };
+
+    var g = sv('g', { 'class': 'grid' }, svg);
+    for (var v = min; v <= max + step / 2; v += step) {
+      sv('line', { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v) }, g);
+      var t = sv('text', { x: pad.l - 8, y: y(v) + 4, 'text-anchor': 'end' }, svg);
+      t.textContent = compact(v);
+    }
+    if (min < 0) sv('line', { 'class': 'zero', x1: pad.l, x2: W - pad.r, y1: y(0), y2: y(0) }, svg);
+    var every = Math.ceil(data.length / (W < 480 ? 6 : 12));
+    data.forEach(function (d, i) {
+      if (i % every !== 0 && i !== data.length - 1) return;
+      var t = sv('text', { x: x(i), y: H - 8, 'text-anchor': 'middle' }, svg);
+      t.textContent = i === 0 ? 'Now' : 'Yr ' + d.year;
+    });
+
+    function line(key, color) {
+      var dstr = data.map(function (d, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(d[key]).toFixed(1); }).join(' ');
+      sv('path', { d: dstr, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    }
+    line('rentNW', 'var(--rent)');
+    line('buyNW', 'var(--buy)');
+
+    // Direct end labels (desktop width only), nudged apart if they collide.
+    if (W >= 480) {
+      var last = data[data.length - 1];
+      var yb = y(last.buyNW), yr = y(last.rentNW);
+      if (Math.abs(yb - yr) < 14) { if (yb <= yr) { yb -= 7; yr += 7; } else { yb += 7; yr -= 7; } }
+      [['Buy', yb, last.buyNW], ['Rent', yr, last.rentNW]].forEach(function (L) {
+        var t = sv('text', { x: x(n) + 8, y: L[1] + 4, style: 'fill:var(--gray-700);font-weight:600' }, svg);
+        t.textContent = L[0] + ' ' + compact(L[2]);
+      });
+    }
+
+    geom.hover = sv('g', { style: 'display:none' }, svg);
+    geom.vline = sv('line', { y1: pad.t, y2: H - pad.b, stroke: 'var(--gray-300)', 'stroke-width': 1 }, geom.hover);
+    geom.dotR = sv('circle', { r: 5, fill: 'var(--rent)', stroke: '#fff', 'stroke-width': 2 }, geom.hover);
+    geom.dotB = sv('circle', { r: 5, fill: 'var(--buy)', stroke: '#fff', 'stroke-width': 2 }, geom.hover);
+    sv('rect', { x: pad.l, y: 0, width: W - pad.l - pad.r, height: H, fill: 'transparent' }, svg);
+  }
+
+  function showTip(evt) {
+    if (!geom || !chartData.length) return;
+    var rect = svg.getBoundingClientRect();
+    var px = (evt.clientX - rect.left) * (geom.W / rect.width);
+    var i = Math.round((px - geom.pad.l) / (geom.W - geom.pad.l - geom.pad.r) * geom.n);
+    i = Math.max(0, Math.min(chartData.length - 1, i));
+    var d = chartData[i], cx = geom.x(i);
+    geom.hover.style.display = '';
+    geom.vline.setAttribute('x1', cx); geom.vline.setAttribute('x2', cx);
+    geom.dotB.setAttribute('cx', cx); geom.dotB.setAttribute('cy', geom.y(d.buyNW));
+    geom.dotR.setAttribute('cx', cx); geom.dotR.setAttribute('cy', geom.y(d.rentNW));
+    var diff = d.buyNW - d.rentNW;
+    tip.innerHTML = '<div class="t-h">' + (d.year === 0 ? 'Today' : 'After year ' + d.year) + '</div>' +
+      '<div class="t-r"><span><i style="background:var(--buy)"></i>Buy</span><b>' + money(d.buyNW) + '</b></div>' +
+      '<div class="t-r"><span><i style="background:var(--rent)"></i>Rent</span><b>' + money(d.rentNW) + '</b></div>' +
+      '<div class="t-r" style="margin-top:4px;color:var(--gray-600)"><span>' + (diff >= 0 ? 'Buying ahead by' : 'Renting ahead by') + '</span><b>' + money(Math.abs(diff)) + '</b></div>';
+    tip.style.display = 'block';
+    var sx = cx * rect.width / geom.W;
+    var left = sx + 14;
+    if (left + tip.offsetWidth > rect.width) left = sx - tip.offsetWidth - 14;
+    tip.style.left = Math.max(0, left) + 'px';
+    tip.style.top = '8px';
+  }
+  function hideTip() { tip.style.display = 'none'; if (geom && geom.hover) geom.hover.style.display = 'none'; }
+  svg.addEventListener('pointermove', showTip);
+  svg.addEventListener('pointerdown', showTip);
+  svg.addEventListener('pointerleave', hideTip);
+
+  // ---------- Render ----------
+  function readState() {
+    var s = {};
+    ids.forEach(function (id) { s[id] = num(id); });
+    checks.forEach(function (id) { s[id] = el[id].checked; });
+    s.horizon = Math.max(1, Math.min(30, Math.round(s.horizon)));
+    return s;
+  }
+
+  function renderCommute(s) {
+    var rentH = commuteHoursPerMonth(s.rentCommute, s.commuteDays);
+    var buyH = commuteHoursPerMonth(s.buyCommute, s.commuteDays);
+    var weekR = s.rentCommute * 2 / 60 * s.commuteDays, weekB = s.buyCommute * 2 / 60 * s.commuteDays;
+    var diffH = buyH - rentH;
+    function card(cls, title, week, month) {
+      return '<div class="commute-card ' + cls + '"><h4>' + title + '</h4>' +
+        '<div class="big">' + hrs(month) + '</div><div class="unit">per month</div>' +
+        '<ul><li>' + hrs(week) + ' per week</li><li>' + hrs(month * 12) + ' per year (' + (Math.round(month * 12 / 24 * 10) / 10) + ' full days)</li>' +
+        '<li>Worth ' + money(month * s.timeValue) + '/mo at ' + money(s.timeValue) + '/hr</li></ul></div>';
+    }
+    var who = diffH > 0 ? 'Buying this home adds' : diffH < 0 ? 'Buying this home saves' : 'Same commute either way';
+    var diffCard = '<div class="commute-card diff"><h4>' + who + '</h4>' +
+      '<div class="big">' + hrs(Math.abs(diffH)) + '</div><div class="unit">per month</div>' +
+      '<ul><li>' + hrs(Math.abs(weekB - weekR)) + ' per week</li><li>' + hrs(Math.abs(diffH) * 12) + ' per year</li>' +
+      '<li>' + money(Math.abs(diffH) * s.timeValue) + '/mo of your time' + (s.includeCommute ? ', counted in the result' : '') + '</li></ul></div>';
+    document.getElementById('commuteResults').innerHTML =
+      card('rent', 'From the rental', weekR, rentH) + card('buy', 'From the home', weekB, buyH) + diffCard;
   }
 
   function render() {
-    var s = {
-      homePrice: num('homePrice'),
-      downPayment: num('downPayment'),
-      loanTerm: num('loanTerm'),
-      interestRate: num('interestRate'),
-      annualInsurance: num('annualInsurance'),
-      annualTax: num('annualTax'),
-      monthlyHOA: num('monthlyHOA'),
-      maintenancePercent: num('maintenancePercent')
-    };
+    var s = readState();
+    save(STATE_KEY, s);
 
+    // --- original monthly cost breakdown ---
     var data = yearly(s.homePrice, s);
-
     data.forEach(function (d, i) {
       refs.total[i].textContent = money(d.totalMonthly);
       rows.forEach(function (row) { refs.rows[row.key][i].textContent = money(d[row.key]); });
       refs.remaining[i].textContent = money(d.remainingBalance);
+      refs.rent[i].textContent = money(d.monthlyRent);
     });
 
-    // Insights
+    var closing = s.homePrice * s.closingPct / 100;
     document.getElementById('i_loan').textContent = money(s.homePrice - s.downPayment);
     var pct = s.homePrice ? ((s.downPayment / s.homePrice) * 100).toFixed(1) : '0.0';
     document.getElementById('i_down').textContent = money(s.downPayment) + ' (' + pct + '%)';
     document.getElementById('i_equity').textContent = money(data.reduce(function (a, y) { return a + y.monthlyPrincipal * 12; }, 0));
     document.getElementById('i_interest').textContent = money(data.reduce(function (a, y) { return a + y.monthlyInterest * 12; }, 0));
+    document.getElementById('i_cash').textContent = money(s.downPayment + closing) + ' (incl. ' + money(closing) + ' closing)';
+    document.getElementById('i_rent').textContent = money(data.reduce(function (a, y) { return a + y.monthlyRent * 12; }, 0));
+    document.getElementById('closingHint').textContent = '≈ ' + money(closing) + ' due at closing, on top of the down payment.';
 
-    // HOA equivalent buying power
     var hint = document.getElementById('hoaHint');
     if (s.monthlyHOA > 0) {
       var r = s.interestRate / 100 / 12, n = s.loanTerm * 12, eq;
       if (n <= 0) eq = 0;
       else if (r === 0) eq = s.monthlyHOA * n;
       else eq = s.monthlyHOA * (Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n));
-      hint.textContent = '\u2248 ' + money(eq) + ' in additional home buying power';
+      hint.textContent = '≈ ' + money(eq) + ' in additional home buying power';
     } else {
       hint.textContent = '';
     }
 
-    // Scenarios
     document.getElementById('sc_low_price').textContent = 'Home Price: ' + money(s.homePrice - 25000);
     document.getElementById('sc_low_val').textContent = money(scenario(-25000, s));
     document.getElementById('sc_base_price').textContent = 'Current: ' + money(s.homePrice);
     document.getElementById('sc_base_val').textContent = money(data[0].totalMonthly);
     document.getElementById('sc_high_price').textContent = 'Home Price: ' + money(s.homePrice + 25000);
     document.getElementById('sc_high_val').textContent = money(scenario(25000, s));
+
+    // --- commute ---
+    renderCommute(s);
+
+    // --- rent vs buy ---
+    var H = s.horizon;
+    var sim = simulate(s, s.monthlyRent, H);
+    var end = sim[sim.length - 1];
+    var adv = end.buyNW - end.rentNW;
+    var vEl = document.getElementById('verdict');
+    vEl.className = 'verdict ' + (adv >= 0 ? 'buy' : 'rent');
+    document.getElementById('v_big').textContent = (adv >= 0 ? 'Buying' : 'Renting') + ' comes out ' + money(Math.abs(adv)) + ' ahead';
+    document.getElementById('v_sub').textContent = 'After ' + H + ' year' + (H === 1 ? '' : 's') +
+      ': if you buy and then sell, your net worth is ' + money(end.buyNW) + '. If you rent and invest the difference, it is ' + money(end.rentNW) + '.';
+
+    var long = simulate(s, s.monthlyRent, 30), be = null;
+    for (var i = 1; i < long.length; i++) { if (long[i].buyNW >= long[i].rentNW) { be = i; break; } }
+    document.getElementById('st_be').textContent = be ? 'Year ' + be : 'Not within 30 yrs';
+    document.getElementById('st_be_n').textContent = be
+      ? 'Stay at least ' + be + ' year' + (be === 1 ? '' : 's') + ' for buying to win.'
+      : 'Renting stays ahead the whole time with these numbers.';
+
+    var ber = breakEvenRent(s, H);
+    document.getElementById('st_ber').textContent = money(ber) + '/mo';
+    document.getElementById('st_ber_n').textContent = 'If comparable rent is below this, rent. Above it, buy. (Over ' + H + ' yrs.)';
+
+    var m1Buy = data[0].totalMonthly, m1Rent = s.monthlyRent + s.rentersInsurance;
+    document.getElementById('st_m1').textContent = money(m1Buy) + ' vs ' + money(m1Rent);
+    document.getElementById('st_m1_n').textContent = 'Buying costs ' + money(Math.abs(m1Buy - m1Rent)) + (m1Buy >= m1Rent ? ' more' : ' less') +
+      ' per month at the start' + (data[0].monthlyPrincipal > 0 ? ', but ' + money(data[0].monthlyPrincipal) + ' of that is equity.' : '.');
+
+    var y1 = data[0];
+    var taxBack = s.itemize ? (y1.monthlyInterest + y1.monthlyTax) * s.taxRate / 100 : 0;
+    var unrecBuy = y1.monthlyInterest + y1.monthlyTax + y1.monthlyMaintenance + y1.monthlyInsurance + y1.monthlyHOA + y1.monthlyPMI + y1.monthlyUtilities - taxBack +
+                   (s.downPayment + closing) * s.investReturn / 100 / 12;
+    document.getElementById('st_unrec').textContent = money(unrecBuy) + ' vs ' + money(m1Rent);
+
+    drawChart(sim);
+
+    var html = '<thead><tr><th>Year</th><th>Home value</th><th>Loan balance</th><th>Buy: yearly cost</th><th>Rent: yearly cost</th><th>Buy net worth</th><th>Rent net worth</th><th>Difference</th></tr></thead><tbody>';
+    sim.slice(1).forEach(function (d) {
+      var df = d.buyNW - d.rentNW;
+      html += '<tr><td>' + d.year + '</td><td>' + money(d.homeValue) + '</td><td>' + money(d.balance) + '</td><td>' + money(d.buyCost) +
+        '</td><td>' + money(d.rentCost) + '</td><td>' + money(d.buyNW) + '</td><td>' + money(d.rentNW) + '</td><td>' +
+        (df >= 0 ? 'Buy +' : 'Rent +') + money(Math.abs(df)) + '</td></tr>';
+    });
+    document.getElementById('yearTable').innerHTML = html + '</tbody>';
   }
 
-  // Wire inputs. Number + range stay in sync for the two that have sliders.
+  // ---------- Rental profiles ----------
+  var profileSelect = document.getElementById('profileSelect');
+  var profileName = document.getElementById('profileName');
+  var profileStatus = document.getElementById('profileStatus');
+  var toastEl = document.getElementById('toast'), toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+  }
+
+  function refreshProfiles(selected) {
+    var profiles = load(PROFILES_KEY, {});
+    var names = Object.keys(profiles).sort(function (a, b) { return a.localeCompare(b); });
+    profileSelect.innerHTML = '';
+    var o = document.createElement('option');
+    o.value = ''; o.textContent = names.length ? 'Choose a saved rental…' : 'No saved rentals yet';
+    profileSelect.appendChild(o);
+    names.forEach(function (nm) {
+      var op = document.createElement('option'); op.value = nm; op.textContent = nm; profileSelect.appendChild(op);
+    });
+    profileSelect.value = selected && profiles[selected] ? selected : '';
+    document.getElementById('profileDelete').disabled = !profileSelect.value;
+  }
+
+  function applyProfile(name) {
+    var p = load(PROFILES_KEY, {})[name];
+    if (!p) return false;
+    profileFields.forEach(function (f) { if (p[f] != null) el[f].value = p[f]; });
+    profileName.value = name;
+    save(LAST_PROFILE_KEY, name);
+    return true;
+  }
+
+  profileSelect.addEventListener('change', function () {
+    var name = profileSelect.value;
+    document.getElementById('profileDelete').disabled = !name;
+    if (name && applyProfile(name)) { render(); toast('Loaded “' + name + '”'); }
+  });
+
+  document.getElementById('profileSave').addEventListener('click', function () {
+    var name = profileName.value.trim();
+    if (!name) { profileName.focus(); profileStatus.textContent = 'Give the profile a name first.'; return; }
+    var profiles = load(PROFILES_KEY, {});
+    var existed = !!profiles[name];
+    var p = {};
+    profileFields.forEach(function (f) { p[f] = num(f); });
+    profiles[name] = p;
+    if (!save(PROFILES_KEY, profiles)) { profileStatus.textContent = 'This browser is blocking storage, so the profile could not be saved.'; return; }
+    save(LAST_PROFILE_KEY, name);
+    refreshProfiles(name);
+    toast(existed ? 'Updated “' + name + '”' : 'Saved “' + name + '”');
+    profileStatus.textContent = 'Saved rent, renters insurance, rent increase, move-in costs, and commute. It will load automatically next time.';
+  });
+
+  document.getElementById('profileDelete').addEventListener('click', function () {
+    var name = profileSelect.value;
+    if (!name || !confirm('Delete the rental profile “' + name + '”?')) return;
+    var profiles = load(PROFILES_KEY, {});
+    delete profiles[name];
+    save(PROFILES_KEY, profiles);
+    if (load(LAST_PROFILE_KEY, '') === name) save(LAST_PROFILE_KEY, '');
+    profileName.value = '';
+    refreshProfiles('');
+    toast('Deleted “' + name + '”');
+  });
+
+  // ---------- Wiring ----------
   ids.forEach(function (id) {
     el[id].addEventListener('input', function () {
       if (id === 'homePrice') {
         homePrice_r.value = el.homePrice.value;
-        // keep down payment slider max tied to home price
         downPayment_r.max = String(num('homePrice'));
       }
       if (id === 'downPayment') downPayment_r.value = el.downPayment.value;
+      if (id === 'horizon') horizon_r.value = el.horizon.value;
       render();
     });
   });
+  checks.forEach(function (id) { el[id].addEventListener('change', render); });
   homePrice_r.addEventListener('input', function () {
     el.homePrice.value = homePrice_r.value;
     downPayment_r.max = homePrice_r.value;
@@ -414,9 +1028,32 @@
     el.downPayment.value = downPayment_r.value;
     render();
   });
+  horizon_r.addEventListener('input', function () {
+    el.horizon.value = horizon_r.value;
+    render();
+  });
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { if (chartData.length) drawChart(chartData); }, 120);
+  });
+
+  // ---------- Startup: restore last session, then last-used rental profile ----------
+  var saved = load(STATE_KEY, null);
+  if (saved) {
+    ids.forEach(function (id) { if (typeof saved[id] === 'number') el[id].value = saved[id]; });
+    checks.forEach(function (id) { if (typeof saved[id] === 'boolean') el[id].checked = saved[id]; });
+  }
+  var lastProfile = load(LAST_PROFILE_KEY, '');
+  if (lastProfile) applyProfile(lastProfile);
+  refreshProfiles(lastProfile);
+
+  homePrice_r.value = el.homePrice.value;
+  downPayment_r.max = String(num('homePrice'));
+  downPayment_r.value = el.downPayment.value;
+  horizon_r.value = el.horizon.value;
 
   buildTable();
-  downPayment_r.max = String(num('homePrice'));
   render();
 })();
 </script>
