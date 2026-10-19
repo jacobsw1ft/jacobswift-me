@@ -454,9 +454,19 @@ function renderAlarms(alarms){
 let ALARMS=[];
 async function toggleAlarm(a, on, input){
   input.disabled=true;
+  const body={action:"setEnabled", id:a.id, enabled:on};
+  // Enabling a one-time alarm (daysOfWeek 0) whose time has passed fails on
+  // Hatch's side — re-anchor it to the next occurrence of its wake time, in the
+  // browser's local timezone (same math we use to create an alarm).
+  if(on && a.daysOfWeek===0){
+    body.startTime = nextStart(fmtWake(a.startTime, a.leadMinutes), a.leadMinutes);
+  }
   try{
-    const d=await api("/api/alarms",{method:"POST",body:{action:"setEnabled",id:a.id,enabled:on}});
-    renderAlarms(d.alarms); toast(on?"Alarm on":"Alarm off");
+    const d=await api("/api/alarms",{method:"POST",body});
+    renderAlarms(d.alarms);
+    const now=(d.alarms||[]).find(x=>x.id===a.id);
+    if(now && now.enabled!==on) toast(`Couldn't turn the alarm ${on?"on":"off"} — try editing its time`);
+    else toast(on?"Alarm on":"Alarm off");
   }catch(e){ input.checked=!on; handleErr(e,"Couldn't update"); }
   finally{ input.disabled=false; }
 }
