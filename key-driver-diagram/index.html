@@ -286,7 +286,19 @@
     padding: 12px;
     border: none;
   }
-  .fish-cat:hover .color-strip { display: flex; }
+  /* color picker opens from a small swatch, not the whole box, so it never covers the text */
+  .fish-swatch-btn {
+    position: absolute; top: -9px; left: -9px;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid #fff; cursor: pointer; display: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,.3); z-index: 22;
+  }
+  .fish-cat:hover .fish-swatch-btn { display: block; }
+  .fish-swatch-btn:hover ~ .color-strip, .color-strip:hover { display: flex; }
+  /* while typing in a box, hide every hover affordance */
+  .fish-box.editing .color-strip, .fish-box.editing .fish-add-sub,
+  .fish-box.editing .fish-swatch-btn, .fish-box.editing .delete-btn,
+  .box.editing .color-strip, .box.editing .delete-btn { display: none !important; }
   .fish-sub { border: 3px solid var(--border); }
   .fish-head {
     border: 3px solid #111827;
@@ -297,24 +309,30 @@
     display: flex; align-items: center; justify-content: center;
   }
 
+  /* "+ sub-bone" button sits clearly below the main-bone box */
   .fish-add-sub {
     position: absolute;
-    bottom: -11px; left: 50%;
+    bottom: -32px; left: 50%;
     transform: translateX(-50%);
-    font-size: 11px;
-    padding: 2px 10px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,.5);
-    background: rgba(0,0,0,.25);
-    color: #fff;
+    padding: 4px 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
     cursor: pointer;
     display: none;
     white-space: nowrap;
-    font: inherit; font-size: 11px;
+    font: inherit; font-size: 11px; font-weight: 600;
+    box-shadow: var(--shadow);
     z-index: 30;
   }
   .fish-cat:hover .fish-add-sub { display: block; }
-  .fish-add-sub:hover { background: rgba(0,0,0,.45); }
+  .fish-add-sub:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* clickable "+" on a main-bone line */
+  #fish-svg .bone-hit { pointer-events: auto; cursor: pointer; }
+  #fish-svg .bone-plus { display: none; pointer-events: none; }
+  #fish-svg .bone-hit:hover .bone-plus { display: block; }
 
   #fish-empty, #kdd-empty {
     position: absolute; inset: 0;
@@ -457,7 +475,8 @@
   <!-- FISHBONE controls -->
   <div class="view-controls" data-view="fishbone" style="display:flex;gap:12px;align-items:center;">
     <button class="toolbar-btn ghost" onclick="addCategory()">＋ Main bone</button>
-    <div class="mode-hint">Click any box to edit. Hover a main bone for its <strong>+ cause</strong> button &amp; color. Hover any box for ✕.</div>
+    <button class="toolbar-btn danger" onclick="askClearFishbone()">Clear</button>
+    <div class="mode-hint">Click any box to edit. Hover a main bone for <strong>+ sub-bone</strong> &amp; its color swatch, or hover the bone line for a <strong>+</strong>. Hover any box for ✕.</div>
   </div>
 
   <!-- KDD controls -->
@@ -835,6 +854,8 @@ function makeEditable(textEl, commit){
   });
 }
 function startEdit(textEl, commit){
+  const host = textEl.closest('.fish-box, .box');
+  if (host) host.classList.add('editing');   // hide hover affordances while typing
   textEl.contentEditable = 'true';
   textEl.focus();
   const range = document.createRange();
@@ -844,6 +865,7 @@ function startEdit(textEl, commit){
   textEl.onpaste = stripPaste;
   textEl.onblur = () => {
     textEl.contentEditable = 'false';
+    if (host) host.classList.remove('editing');
     commit(textEl.textContent.trim());
     persist();
   };
@@ -962,6 +984,21 @@ function deleteSimple(kind, id){
 
 function rebuild(){ if (state.view === 'fishbone') buildFishbone(); else buildKdd(); }
 
+/* clear the whole fishbone (head + every bone) after confirming */
+function askClearFishbone(){
+  openConfirm('Clear the fishbone?',
+    'This removes the head text and every main bone and sub-bone so you can start from a blank diagram. This can’t be undone.',
+    () => {
+      state.effectText = '';
+      state.categories = [];
+      state.items = [];
+      state.connections = [];
+      state.removedDefaults = [];
+      buildFishbone(); persist();
+      toast('Fishbone cleared');
+    });
+}
+
 /* ═══════════════════════════════════════════
    FISHBONE RENDERING
 ═══════════════════════════════════════════ */
@@ -1025,12 +1062,18 @@ function buildFishbone(){
     el.appendChild(tx);
     makeEditable(tx, t => cat.text = t);
     el.appendChild(makeDeleteBtn(() => deleteCategory(cat.id)));
-    // add-sub button
+    // add-sub button (below the box)
     const addSub = document.createElement('button');
-    addSub.className = 'fish-add-sub'; addSub.textContent = '＋ cause';
+    addSub.className = 'fish-add-sub'; addSub.textContent = '＋ sub-bone';
     addSub.onclick = e => { e.stopPropagation(); addItem(cat.id); };
     el.appendChild(addSub);
-    // color strip
+    // color swatch button (opens the picker without covering the text)
+    const swatch = document.createElement('button');
+    swatch.className = 'fish-swatch-btn'; swatch.style.background = cat.color;
+    swatch.title = 'Change color';
+    swatch.onclick = e => e.stopPropagation();
+    el.appendChild(swatch);
+    // color strip — must follow the swatch so `.fish-swatch-btn:hover ~ .color-strip` matches
     el.appendChild(makeColorStrip(
       () => cat.color,
       c => { cat.color = c; buildFishbone(); persist(); },
@@ -1123,7 +1166,7 @@ function layoutFishbone(cats, head){
       const boneX = y => ax - c.boneRun * (Math.abs(y - centerY) / c.boneRise);
 
       // main bone
-      lines.push({ x1: ax, y1: centerY, x2: tipX, y2: labelInnerY, color: c.cat.color, width: 4 });
+      lines.push({ x1: ax, y1: centerY, x2: tipX, y2: labelInnerY, color: c.cat.color, width: 4, mainBone: true, catId: c.cat.id });
 
       // label at the tip
       const labelTop = isTop ? (labelInnerY - c.labelH) : labelInnerY;
@@ -1170,6 +1213,38 @@ function layoutFishbone(cats, head){
     ln.setAttribute('stroke', l.color); ln.setAttribute('stroke-width', l.width);
     ln.setAttribute('stroke-linecap', 'round');
     svg.appendChild(ln);
+  });
+
+  // interactive "+" on each main bone: hover the bone line to add a sub-bone
+  lines.filter(l => l.mainBone).forEach(l => {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'bone-hit');
+    g.addEventListener('click', () => addItem(l.catId));
+    const title = document.createElementNS(NS, 'title');
+    title.textContent = 'Add a sub-bone';
+    g.appendChild(title);
+    // wide transparent hit area over the bone
+    const hit = document.createElementNS(NS, 'line');
+    hit.setAttribute('x1', l.x1); hit.setAttribute('y1', l.y1);
+    hit.setAttribute('x2', l.x2); hit.setAttribute('y2', l.y2);
+    hit.setAttribute('stroke', 'transparent'); hit.setAttribute('stroke-width', 22);
+    g.appendChild(hit);
+    // "+" marker at the bone midpoint, shown on hover
+    const mx = (l.x1 + l.x2) / 2, my = (l.y1 + l.y2) / 2;
+    const plus = document.createElementNS(NS, 'g');
+    plus.setAttribute('class', 'bone-plus');
+    const circ = document.createElementNS(NS, 'circle');
+    circ.setAttribute('cx', mx); circ.setAttribute('cy', my); circ.setAttribute('r', 11);
+    circ.setAttribute('fill', '#fff'); circ.setAttribute('stroke', l.color); circ.setAttribute('stroke-width', 2);
+    plus.appendChild(circ);
+    [[mx-5,my,mx+5,my],[mx,my-5,mx,my+5]].forEach(([x1,y1,x2,y2]) => {
+      const pl = document.createElementNS(NS, 'line');
+      pl.setAttribute('x1',x1); pl.setAttribute('y1',y1); pl.setAttribute('x2',x2); pl.setAttribute('y2',y2);
+      pl.setAttribute('stroke', l.color); pl.setAttribute('stroke-width', 2.4); pl.setAttribute('stroke-linecap','round');
+      plus.appendChild(pl);
+    });
+    g.appendChild(plus);
+    svg.appendChild(g);
   });
 
   // stash geometry for PNG export
