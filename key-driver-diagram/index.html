@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Key Driver Diagram Builder</title>
-<!-- system fonts only -->
+<title>QI Diagrams — Fishbone & Key Driver Builder</title>
+<!-- system fonts only · no external libraries -->
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -17,11 +17,6 @@
     --accent: #2563eb;
     --accent-light: #eff6ff;
     --danger: #ef4444;
-    --col-aim-bg: #ffffff;
-    --col-kd-bg: #3b82f6;
-    --col-sd-bg: #ffffff;
-    --col-int-bg: #ffffff;
-    --col-met-bg: #ffffff;
     --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
     --shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
     --radius: 8px;
@@ -41,10 +36,10 @@
   .topbar {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 12px 20px;
+    padding: 10px 18px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
     position: sticky;
     top: 0;
@@ -53,11 +48,12 @@
   }
   .topbar h1 {
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: 18px;
+    font-size: 17px;
     color: var(--text);
-    margin-right: 8px;
+    white-space: nowrap;
   }
   .topbar-sep { width: 1px; height: 24px; background: var(--border); }
+  .ml-auto { margin-left: auto; }
 
   .mode-group { display: flex; gap: 4px; }
   .mode-btn {
@@ -65,37 +61,54 @@
     border-radius: 6px;
     border: 1px solid var(--border);
     background: var(--surface);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font: inherit;
     font-size: 13px;
     font-weight: 500;
     color: var(--muted);
     cursor: pointer;
     transition: all .15s;
+    white-space: nowrap;
   }
-  .mode-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
+  .mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
   .mode-btn:hover:not(.active) { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
 
+  .view-group { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .view-btn {
+    padding: 7px 16px;
+    border: none;
+    background: var(--surface);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .view-btn + .view-btn { border-left: 1px solid var(--border); }
+  .view-btn.active { background: #111827; color: #fff; }
+  .view-btn:hover:not(.active) { background: #f3f4f6; color: var(--text); }
+
   .toolbar-btn {
-    padding: 6px 14px;
+    padding: 6px 12px;
     border-radius: 6px;
     border: 1px solid var(--border);
     background: var(--surface);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font: inherit;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     color: var(--text);
     transition: all .15s;
+    white-space: nowrap;
   }
   .toolbar-btn:hover { background: #f9fafb; border-color: #9ca3af; }
   .toolbar-btn.danger { color: var(--danger); border-color: #fca5a5; }
   .toolbar-btn.danger:hover { background: #fef2f2; }
   .toolbar-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .toolbar-btn.primary:hover { background: #1d4ed8; }
+  .toolbar-btn.ghost { border-style: dashed; color: var(--muted); }
+  .toolbar-btn.ghost:hover { color: var(--accent); border-color: var(--accent); }
 
   .mode-hint {
     font-size: 12px;
@@ -104,387 +117,49 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 5px 10px;
+    max-width: 340px;
   }
   .mode-hint strong { color: var(--accent); }
 
-  .ml-auto { margin-left: auto; }
-
-  /* ── DIAGRAM AREA ── */
-  .diagram-wrap {
-    flex: 1;
-    overflow: auto;
-    padding: 24px;
-    position: relative;
-  }
-
-  .diagram {
-    display: flex;
-    align-items: flex-start;
-    gap: 48px;
-    min-width: 1400px;
-    position: relative;
-    padding: 0 8px;
-  }
-
-  /* SVG overlay for connections */
-  .connections-svg {
+  /* dropdown (save menu) */
+  .menu { position: relative; }
+  .menu-panel {
+    display: none;
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    overflow: visible;
-    z-index: 10;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+    min-width: 240px;
+    z-index: 150;
   }
-  .conn-line {
-    stroke: var(--conn-color);
-    stroke-width: 2;
-    fill: none;
-    pointer-events: stroke;
-    cursor: pointer;
-    transition: stroke .15s;
-  }
-  .conn-line:hover { stroke: var(--danger); stroke-width: 3; }
-  .conn-line.drawing { stroke: var(--accent); stroke-dasharray: 5 3; stroke-width: 2; }
-
-  /* ── COLUMN ── */
-  .col-wrap {
+  .menu.open .menu-panel { display: block; }
+  .menu-item {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    flex: 1;
-    min-width: 0;
-  }
-  .col-header-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 12px;
-  }
-  .col-header {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    text-align: center;
-  }
-  .col-clear-btn {
-    font-size: 10px;
-    color: #9ca3af;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
     background: none;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    padding: 2px 8px;
-    cursor: pointer;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    transition: all .15s;
-  }
-  .col-clear-btn:hover { color: var(--danger); border-color: #fca5a5; background: #fef2f2; }
-  .col-font-row {
-    display: flex !important;
-    align-items: center;
-    gap: 4px;
-    margin-top: 2px;
-  }
-  .col-font-btn {
-    width: 22px !important;
-    height: 22px !important;
-    border: 1px solid #d4d8e0 !important;
-    border-radius: 4px !important;
-    background: #ffffff !important;
-    font-size: 15px !important;
-    line-height: 22px !important;
-    cursor: pointer !important;
-    color: #6b7280 !important;
-    text-align: center !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
-    font-family: sans-serif !important;
-    flex-shrink: 0;
-    transition: all .15s;
-    appearance: none;
-    -webkit-appearance: none;
-  }
-  .col-font-btn:hover { background: #eff6ff !important; color: #2563eb !important; border-color: #2563eb !important; }
-  .col-font-display {
-    font-size: 11px;
-    color: #6b7280;
-    min-width: 28px;
-    text-align: center;
-    font-family: sans-serif;
-  }
-  .col-body {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    padding: 0 8px;
-  }
-
-  /* SD boxes get 3px border for color accent */
-  .col-sd .box { border-width: 3px; }
-
-  /* AIM column is fixed width */
-  .col-aim { flex: 0 0 200px; }
-  .col-aim .col-body { padding: 0; }
-
-  /* ── BOXES ── */
-  .box {
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
-    padding: 10px 12px;
+    font: inherit;
     font-size: 13px;
-    font-weight: 500;
-    line-height: 1.4;
-    cursor: default;
-    transition: box-shadow .15s, border-color .15s, transform .1s;
-    position: relative;
-    user-select: none;
-    text-align: center;
-    word-break: break-word;
-  }
-  .box:hover { box-shadow: var(--shadow-lg); }
-  .box.selected-from {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
-  }
-  .box.selected-to {
-    border-color: #10b981 !important;
-    box-shadow: 0 0 0 3px rgba(16,185,129,0.2);
-  }
-  .box.connect-mode {
-    cursor: crosshair;
-  }
-  .box.connect-mode:hover {
-    border-color: var(--accent);
-    background: var(--accent-light);
-  }
-
-  /* aim box */
-  .aim-box {
-    border: 2px solid #1a1d23;
-    border-radius: var(--radius);
-    background: var(--surface);
-    padding: 14px 12px;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1.55;
-    text-align: center;
-    min-height: 120px;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    cursor: default;
-    word-break: break-word;
-    overflow-wrap: break-word;
-  }
-  #aim-text {
-    width: 100%;
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-    word-break: break-word;
-  }
-
-  /* KD boxes get colored */
-  .col-kd .box {
-    color: #fff;
-    font-weight: 600;
-    font-size: 14px;
-    padding: 14px 12px;
-    min-height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .kd-colors { --c0:#4ade80;--c1:#3b82f6;--c2:#8b5cf6;--c3:#a78bfa;--c4:#22c55e;--c5:#f59e0b;--c6:#ef4444;--c7:#14b8a6; }
-
-  /* ── EDITABLE ── */
-  .box-text { outline: none; }
-  .box-text:empty::before { content: attr(data-placeholder); color: #9ca3af; font-style: italic; }
-
-  /* edit mode cursor */
-  .edit-mode .box { cursor: text; }
-  .edit-mode .aim-box { cursor: text; }
-
-  /* ── ADD BUTTONS ── */
-  .add-btn {
-    width: 100%;
-    padding: 7px;
-    border: 2px dashed #d1d5db;
-    border-radius: var(--radius);
-    background: transparent;
-    font-size: 12px;
-    color: #9ca3af;
-    cursor: pointer;
-    transition: all .15s;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-  .add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
-
-  /* ── DELETE BUTTON ── */
-  .delete-btn {
-    position: absolute;
-    top: -8px; right: -8px;
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--danger);
-    color: #fff;
-    border: none;
-    font-size: 13px;
-    line-height: 1;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  }
-  .box:hover .delete-btn { display: flex; }
-
-  /* ── COLOR PICKER (KD) ── */
-  .kd-color-strip {
-    display: none;
-    position: absolute;
-    bottom: -58px; left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 6px 10px;
-    gap: 5px;
-    z-index: 30;
-    box-shadow: var(--shadow-lg);
-    flex-direction: column;
-    align-items: center;
-    min-width: 180px;
-  }
-  .box:hover .kd-color-strip { display: flex; }
-  .kd-swatches-row { display: flex; gap: 5px; align-items: center; }
-  .kd-swatch {
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: transform .1s;
-    flex-shrink: 0;
-  }
-  .kd-swatch:hover { transform: scale(1.25); border-color: #9ca3af; }
-  .kd-hex-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    width: 100%;
-  }
-  .kd-hex-input {
-    flex: 1;
-    font-size: 11px;
-    font-family: monospace;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 3px 6px;
     color: var(--text);
-    outline: none;
-    min-width: 0;
-  }
-  .kd-hex-input:focus { border-color: var(--accent); }
-  .kd-hex-apply {
-    font-size: 11px;
-    padding: 3px 7px;
-    border-radius: 4px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .kd-hex-apply:hover { background: #1d4ed8; }
-
-  /* ── LEGEND ── */
-  .legend {
-    position: fixed;
-    bottom: 16px; right: 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.8;
-    box-shadow: var(--shadow);
-    max-width: 220px;
-  }
-  .legend strong { color: var(--text); display: block; margin-bottom: 4px; font-size: 12px; }
-
-  /* ── EXPORT OVERLAY ── */
-  #export-notice {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
-  #export-notice.show { display: flex; }
-  .export-card {
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 28px 32px;
-    max-width: 420px;
-    text-align: center;
-    box-shadow: var(--shadow-lg);
-  }
-  .export-card h2 { font-family: Georgia, 'Times New Roman', serif; margin-bottom: 8px; }
-  .export-card p { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
-  .export-card-btns { display: flex; gap: 10px; justify-content: center; }
-  .export-presets {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .preset-btn {
-    border: 2px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface);
-    padding: 10px 12px;
-    cursor: pointer;
     text-align: left;
-    transition: all .15s;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .preset-btn:hover { border-color: var(--accent); background: var(--accent-light); }
-  .preset-btn.active { border-color: var(--accent); background: var(--accent-light); }
-  .preset-name { font-size: 13px; font-weight: 600; color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-  .preset-dim { font-size: 11px; color: var(--muted); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-  .export-custom-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    margin-bottom: 10px;
-    justify-content: center;
-  }
-  .export-field { display: flex; flex-direction: column; gap: 3px; }
-  .export-field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-  .export-field input {
-    width: 90px;
-    border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 6px 8px;
-    font-size: 13px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    color: var(--text);
-    outline: none;
+    cursor: pointer;
   }
-  .export-field input:focus { border-color: var(--accent); }
-  .export-x { font-size: 16px; color: var(--muted); padding-bottom: 6px; }
+  .menu-item:hover { background: var(--accent-light); color: var(--accent); }
+  .menu-item .mi-sub { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .menu-item:hover .mi-sub { color: var(--accent); }
+  .menu-item.danger { color: var(--danger); }
+  .menu-item.danger:hover { background: #fef2f2; }
+  .menu-divider { height: 1px; background: var(--border); margin: 5px 4px; }
+
+  /* font controls */
   .font-col-group {
     display: flex;
     align-items: center;
@@ -494,96 +169,373 @@
     border-radius: 6px;
     padding: 3px 6px;
   }
-  .font-col-label {
-    font-size: 11px;
-    color: #6b7280;
-    margin-right: 2px;
-    white-space: nowrap;
-  }
+  .font-col-label { font-size: 11px; color: #6b7280; margin-right: 2px; white-space: nowrap; }
   .font-sz-btn {
-    width: 18px;
-    height: 18px;
-    border: 1px solid #d1d5db;
-    border-radius: 3px;
-    background: #ffffff;
-    color: #374151;
-    font-size: 14px;
-    line-height: 16px;
-    cursor: pointer;
-    padding: 0;
-    text-align: center;
+    width: 18px; height: 18px;
+    border: 1px solid #d1d5db; border-radius: 3px;
+    background: #fff; color: #374151;
+    font-size: 14px; line-height: 16px; cursor: pointer; padding: 0; text-align: center;
   }
   .font-sz-btn:hover { background: #dbeafe; border-color: #3b82f6; color: #2563eb; }
-  .font-sz-val {
-    font-size: 11px;
-    color: #374151;
-    min-width: 18px;
+  .font-sz-val { font-size: 11px; color: #374151; min-width: 18px; text-align: center; font-weight: 600; }
+
+  .hidden { display: none !important; }
+
+  /* toast */
+  #toast {
+    position: fixed;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #111827; color: #fff;
+    padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    z-index: 300;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── SHARED BOX TEXT ── */
+  .box-text { outline: none; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; }
+  .box-text:empty::before { content: attr(data-placeholder); color: #9ca3af; font-style: italic; }
+
+  .delete-btn {
+    position: absolute;
+    top: -8px; right: -8px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--danger);
+    color: #fff; border: none;
+    font-size: 13px; line-height: 1; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    z-index: 20;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  /* ── COLOR STRIP (shared) ── */
+  .color-strip {
+    display: none;
+    position: absolute;
+    bottom: -62px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px 10px; gap: 5px;
+    z-index: 60;
+    box-shadow: var(--shadow-lg);
+    flex-direction: column; align-items: center;
+    min-width: 186px;
+  }
+  .swatches-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .swatch {
+    width: 16px; height: 16px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+    transition: transform .1s; flex-shrink: 0;
+  }
+  .swatch:hover { transform: scale(1.25); border-color: #9ca3af; }
+  .hex-row { display: flex; align-items: center; gap: 4px; width: 100%; }
+  .hex-input {
+    flex: 1; font-size: 11px; font-family: monospace;
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 3px 6px; color: var(--text); outline: none; min-width: 0;
+  }
+  .hex-input:focus { border-color: var(--accent); }
+  .hex-apply {
+    font-size: 11px; padding: 3px 7px; border-radius: 4px;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    font: inherit; white-space: nowrap; flex-shrink: 0;
+  }
+  .hex-apply:hover { background: #1d4ed8; }
+  .text-toggle-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .text-toggle-row span { font-size: 11px; color: var(--muted); }
+  .text-toggle-btn { font-size: 11px; padding: 2px 10px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; font: inherit; }
+
+  /* ═══════════════════════════════════════════
+     FISHBONE VIEW
+  ═══════════════════════════════════════════ */
+  .view-wrap { flex: 1; overflow: auto; position: relative; }
+
+  #fish-canvas {
+    position: relative;
+    margin: 0 auto;
+  }
+  #fish-svg { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+
+  .fish-box {
+    position: absolute;
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 9px 11px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
     text-align: center;
-    font-weight: 600;
+    box-shadow: var(--shadow);
+    transition: box-shadow .15s;
+    z-index: 5;
+  }
+  .fish-box:hover { box-shadow: var(--shadow-lg); z-index: 40; }
+  .fish-box:hover .delete-btn { display: flex; }
+
+  .fish-cat {
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px;
+    border: none;
+  }
+  .fish-cat:hover .color-strip { display: flex; }
+  .fish-sub { border: 3px solid var(--border); }
+  .fish-head {
+    border: 3px solid #111827;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 16px 14px;
+    line-height: 1.45;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .fish-add-sub {
+    position: absolute;
+    bottom: -11px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.5);
+    background: rgba(0,0,0,.25);
+    color: #fff;
+    cursor: pointer;
+    display: none;
+    white-space: nowrap;
+    font: inherit; font-size: 11px;
+    z-index: 30;
+  }
+  .fish-cat:hover .fish-add-sub { display: block; }
+  .fish-add-sub:hover { background: rgba(0,0,0,.45); }
+
+  #fish-empty, #kdd-empty {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 14px; pointer-events: none;
+  }
+
+  .edit-cursor { cursor: text; }
+
+  /* ═══════════════════════════════════════════
+     KEY DRIVER VIEW (columns)
+  ═══════════════════════════════════════════ */
+  .diagram {
+    display: flex;
+    align-items: flex-start;
+    gap: 44px;
+    min-width: 1360px;
+    position: relative;
+    padding: 24px 32px;
+  }
+  .connections-svg {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; overflow: visible; z-index: 10;
+  }
+  .conn-line {
+    stroke: var(--conn-color); stroke-width: 2; fill: none;
+    pointer-events: stroke; cursor: pointer; transition: stroke .15s;
+  }
+  .conn-line:hover { stroke: var(--danger); stroke-width: 3; }
+
+  .col-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
+  .col-header-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 12px; }
+  .col-header {
+    font-size: 13px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em; text-align: center;
+  }
+  .col-clear-btn {
+    font-size: 10px; color: #9ca3af; background: none;
+    border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 8px;
+    cursor: pointer; font: inherit; transition: all .15s;
+  }
+  .col-clear-btn:hover { color: var(--danger); border-color: #fca5a5; background: #fef2f2; }
+  .col-body { display: flex; flex-direction: column; gap: 10px; width: 100%; padding: 0 8px; }
+
+  .col-aim { flex: 0 0 200px; }
+  .col-aim .col-body { padding: 0; }
+
+  .box {
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 10px 12px;
+    font-size: 13px; font-weight: 500; line-height: 1.4;
+    cursor: default;
+    transition: box-shadow .15s, border-color .15s;
+    position: relative; user-select: none;
+    text-align: center; word-break: break-word;
+  }
+  .box:hover { box-shadow: var(--shadow-lg); }
+  .box:hover .delete-btn { display: flex; }
+  .box.selected-from { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
+  .col-sd .box, .col-kd .box.src-colored { border-width: 3px; }
+  .box.connect-mode { cursor: crosshair; }
+  .box.connect-mode:hover { border-color: var(--accent); background: var(--accent-light); }
+
+  .aim-box {
+    border: 2px solid #111827; border-radius: var(--radius);
+    background: var(--surface); padding: 14px 12px;
+    font-size: 13px; font-weight: 500; line-height: 1.55; text-align: center;
+    min-height: 120px; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    cursor: default; word-break: break-word;
+  }
+  .col-kd .box {
+    color: #fff; font-weight: 600; font-size: 14px;
+    padding: 14px 12px; min-height: 60px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .col-kd .box:hover .color-strip { display: flex; }
+  .col-sd .box:hover .color-strip { display: flex; }
+
+  .add-btn {
+    width: 100%; padding: 7px;
+    border: 2px dashed #d1d5db; border-radius: var(--radius);
+    background: transparent; font-size: 12px; color: #9ca3af;
+    cursor: pointer; transition: all .15s; font: inherit;
+  }
+  .add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  .edit-mode .box, .edit-mode .aim-box { cursor: text; }
+
+  /* ── EXPORT MODAL ── */
+  #export-notice { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+  #export-notice.show { display: flex; }
+  .export-card { background: var(--surface); border-radius: 12px; padding: 26px 30px; max-width: 440px; text-align: center; box-shadow: var(--shadow-lg); }
+  .export-card h2 { font-family: Georgia, 'Times New Roman', serif; margin-bottom: 6px; }
+  .export-card p { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .export-card-btns { display: flex; gap: 10px; justify-content: center; }
+  .export-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .preset-btn { border: 2px solid var(--border); border-radius: 8px; background: var(--surface); padding: 10px 12px; cursor: pointer; text-align: left; transition: all .15s; display: flex; flex-direction: column; gap: 2px; }
+  .preset-btn:hover, .preset-btn.active { border-color: var(--accent); background: var(--accent-light); }
+  .preset-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .preset-dim { font-size: 11px; color: var(--muted); }
+  .export-custom-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 10px; justify-content: center; }
+  .export-field { display: flex; flex-direction: column; gap: 3px; }
+  .export-field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .export-field input { width: 90px; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; font-size: 13px; color: var(--text); outline: none; }
+  .export-field input:focus { border-color: var(--accent); }
+  .export-x { font-size: 16px; color: var(--muted); padding-bottom: 6px; }
+
+  /* ── CONFIRM MODAL ── */
+  #confirm-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 210; align-items: center; justify-content: center; }
+  #confirm-modal.show { display: flex; }
+  .confirm-card { background: var(--surface); border-radius: 12px; padding: 24px 28px; max-width: 400px; text-align: center; box-shadow: var(--shadow-lg); }
+  .confirm-card h2 { font-family: Georgia, 'Times New Roman', serif; margin-bottom: 8px; font-size: 19px; }
+  .confirm-card p { color: var(--muted); font-size: 13px; margin-bottom: 18px; line-height: 1.5; }
+  .confirm-card-btns { display: flex; gap: 10px; justify-content: center; }
+
+  @media print {
+    .topbar, #toast, .add-btn, .delete-btn, .color-strip, .fish-add-sub, #export-notice, #confirm-modal { display: none !important; }
+    body { background: white; }
+    .view-wrap { overflow: visible; }
   }
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
+<!-- ══════════ TOP BAR ══════════ -->
 <div class="topbar">
-  <h1>Key Driver Diagram</h1>
-  <div class="topbar-sep"></div>
+  <h1>QI Diagrams</h1>
 
-  <div class="mode-group">
-    <button class="mode-btn active" id="btn-edit" onclick="setMode('edit')">✏️ Edit Text</button>
-    <button class="mode-btn" id="btn-connect" onclick="setMode('connect')">🔗 Draw Lines</button>
-  </div>
-
-  <div class="mode-hint" id="mode-hint">
-    <strong>Edit mode:</strong> Click any box to edit its text. Hover to delete.
+  <div class="view-group">
+    <button class="view-btn active" id="vb-fish" onclick="switchView('fishbone')">🐟 Fishbone</button>
+    <button class="view-btn" id="vb-kdd" onclick="switchView('kdd')">📊 Key Driver</button>
   </div>
 
   <div class="topbar-sep"></div>
-  <button class="toolbar-btn danger" onclick="clearAllConnections()">Clear Lines</button>
+
+  <!-- FISHBONE controls -->
+  <div class="view-controls" data-view="fishbone" style="display:flex;gap:12px;align-items:center;">
+    <button class="toolbar-btn ghost" onclick="addCategory()">＋ Main bone</button>
+    <div class="mode-hint">Click any box to edit. Hover a main bone for its <strong>+ cause</strong> button &amp; color. Hover any box for ✕.</div>
+  </div>
+
+  <!-- KDD controls -->
+  <div class="view-controls hidden" data-view="kdd" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <div class="mode-group">
+      <button class="mode-btn active" id="btn-edit" onclick="setMode('edit')">✏️ Edit Text</button>
+      <button class="mode-btn" id="btn-connect" onclick="setMode('connect')">🔗 Draw Lines</button>
+    </div>
+    <div class="mode-hint" id="mode-hint"><strong>Edit mode:</strong> Click any box to edit its text. Hover to delete.</div>
+    <button class="toolbar-btn danger" onclick="clearAllConnections()">Clear Lines</button>
+    <button class="toolbar-btn" id="btn-resync" onclick="askResync()">⟳ Resync from fishbone</button>
+  </div>
+
   <div class="topbar-sep"></div>
-  <span style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">Font Size:</span>
-  <div class="font-col-group">
-    <span class="font-col-label">Aim Statement</span>
+
+  <!-- Font controls -->
+  <div class="font-col-group" data-fontview="both">
+    <span class="font-col-label" id="fl-aim">Head</span>
     <button class="font-sz-btn" onclick="adjustFontSize('aim',-1)">−</button>
     <span class="font-sz-val" id="fs-aim">13</span>
     <button class="font-sz-btn" onclick="adjustFontSize('aim',1)">+</button>
   </div>
-  <div class="font-col-group">
-    <span class="font-col-label">Key Drivers</span>
+  <div class="font-col-group" data-fontview="both">
+    <span class="font-col-label" id="fl-kd">Main bones</span>
     <button class="font-sz-btn" onclick="adjustFontSize('kd',-1)">−</button>
     <span class="font-sz-val" id="fs-kd">14</span>
     <button class="font-sz-btn" onclick="adjustFontSize('kd',1)">+</button>
   </div>
-  <div class="font-col-group">
-    <span class="font-col-label">2° Drivers</span>
+  <div class="font-col-group" data-fontview="both">
+    <span class="font-col-label" id="fl-sd">Causes</span>
     <button class="font-sz-btn" onclick="adjustFontSize('sd',-1)">−</button>
     <span class="font-sz-val" id="fs-sd">13</span>
     <button class="font-sz-btn" onclick="adjustFontSize('sd',1)">+</button>
   </div>
-  <div class="font-col-group">
+  <div class="font-col-group hidden" data-fontview="kdd">
     <span class="font-col-label">Interventions</span>
     <button class="font-sz-btn" onclick="adjustFontSize('int',-1)">−</button>
     <span class="font-sz-val" id="fs-int">13</span>
     <button class="font-sz-btn" onclick="adjustFontSize('int',1)">+</button>
   </div>
-  <div class="font-col-group">
+  <div class="font-col-group hidden" data-fontview="kdd">
     <span class="font-col-label">Metrics</span>
     <button class="font-sz-btn" onclick="adjustFontSize('met',-1)">−</button>
     <span class="font-sz-val" id="fs-met">13</span>
     <button class="font-sz-btn" onclick="adjustFontSize('met',1)">+</button>
   </div>
-  <button class="toolbar-btn primary ml-auto" onclick="exportPNG()">⬇ Export PNG</button>
+
+  <div class="ml-auto"></div>
+
+  <!-- Save menu -->
+  <div class="menu" id="save-menu">
+    <button class="toolbar-btn" onclick="toggleMenu(event)">💾 Save / Load ▾</button>
+    <div class="menu-panel">
+      <button class="menu-item" onclick="saveToFile()">⬇ Save to file<span class="mi-sub">Download a .json you can keep or share</span></button>
+      <button class="menu-item" onclick="openFile()">📂 Open file…<span class="mi-sub">Load a .json you saved before</span></button>
+      <button class="menu-item" onclick="copyShareLink()">🔗 Copy share link<span class="mi-sub">A URL that rebuilds this diagram</span></button>
+      <div class="menu-divider"></div>
+      <button class="menu-item" onclick="manualSaveBrowser()">🖥 Save to this browser<span class="mi-sub">Auto-saves already · click to confirm</span></button>
+      <button class="menu-item danger" onclick="resetAll()">🗑 New / clear everything</button>
+    </div>
+  </div>
+
+  <button class="toolbar-btn primary" onclick="exportPNG()">⬇ Export PNG</button>
+  <input type="file" id="file-input" accept="application/json,.json" style="display:none" onchange="handleFileLoad(event)">
 </div>
 
-<!-- DIAGRAM -->
-<div class="diagram-wrap" id="diagram-wrap">
-  <div class="diagram kd-colors" id="diagram">
+<!-- ══════════ FISHBONE VIEW ══════════ -->
+<div class="view-wrap" id="fishbone-view">
+  <div id="fish-canvas">
+    <svg id="fish-svg"></svg>
+  </div>
+</div>
 
-    <!-- SVG for connections -->
+<!-- ══════════ KEY DRIVER VIEW ══════════ -->
+<div class="view-wrap hidden" id="kdd-view">
+  <div class="diagram" id="diagram">
     <svg class="connections-svg" id="conn-svg"></svg>
 
-    <!-- AIM -->
     <div class="col-wrap col-aim">
       <div class="col-header-wrap">
         <div class="col-header">Aim Statement</div>
@@ -591,850 +543,1018 @@
       </div>
       <div class="col-body">
         <div class="aim-box" id="aim-box" ondblclick="editAim()">
-          <div class="box-text" id="aim-text" contenteditable="false" data-placeholder="Double-click to edit…">SMART Aim
-Statement</div>
+          <div class="box-text" id="aim-text" contenteditable="false" data-placeholder="Double-click to edit…"></div>
         </div>
       </div>
     </div>
 
-    <!-- KD -->
     <div class="col-wrap col-kd" id="col-kd">
-      <div class="col-header-wrap">
-        <div class="col-header">Key Drivers</div>
-        <button class="col-clear-btn" onclick="clearColText('kd')">clear text</button>
-      </div>
+      <div class="col-header-wrap"><div class="col-header">Key Drivers</div><button class="col-clear-btn" onclick="clearColText('kd')">clear text</button></div>
       <div class="col-body" id="kd-body"></div>
     </div>
 
-    <!-- SD -->
     <div class="col-wrap col-sd" id="col-sd">
-      <div class="col-header-wrap">
-        <div class="col-header">2° Drivers</div>
-        <button class="col-clear-btn" onclick="clearColText('sd')">clear text</button>
-      </div>
+      <div class="col-header-wrap"><div class="col-header">2° Drivers</div><button class="col-clear-btn" onclick="clearColText('sd')">clear text</button></div>
       <div class="col-body" id="sd-body"></div>
     </div>
 
-    <!-- INTERVENTIONS -->
     <div class="col-wrap col-int" id="col-int">
-      <div class="col-header-wrap">
-        <div class="col-header">Interventions</div>
-        <button class="col-clear-btn" onclick="clearColText('int')">clear text</button>
-      </div>
+      <div class="col-header-wrap"><div class="col-header">Interventions</div><button class="col-clear-btn" onclick="clearColText('int')">clear text</button></div>
       <div class="col-body" id="int-body"></div>
     </div>
 
-    <!-- METRICS -->
     <div class="col-wrap col-met" id="col-met">
-      <div class="col-header-wrap">
-        <div class="col-header">Metrics</div>
-        <button class="col-clear-btn" onclick="clearColText('met')">clear text</button>
-      </div>
+      <div class="col-header-wrap"><div class="col-header">Metrics</div><button class="col-clear-btn" onclick="clearColText('met')">clear text</button></div>
       <div class="col-body" id="met-body"></div>
     </div>
-
   </div>
 </div>
 
-<!-- Legend -->
-<div class="legend" id="legend">
-  <strong>How to use</strong>
-  ✏️ <b>Edit</b> – click text to edit<br>
-  🔗 <b>Draw Lines</b> – click source box, then target box in next column<br>
-  🖱️ Hover a line → click to delete it<br>
-  ➕ Use "+ Add" to add boxes
-</div>
+<div id="toast"></div>
 
 <!-- Export modal -->
 <div id="export-notice">
   <div class="export-card">
     <h2>Export PNG</h2>
-    <p>Choose a preset or enter a custom size. Resolution is set at 150 DPI for crisp results.</p>
-
+    <p>Choose a preset or enter a custom size. Resolution is set in DPI for crisp results.</p>
     <div class="export-presets">
-      <button class="preset-btn active" onclick="selectPreset(this, 13.333, 7.5)">
-        <span class="preset-name">PowerPoint Slide</span>
-        <span class="preset-dim">13.33 × 7.5 in</span>
-      </button>
-      <button class="preset-btn" onclick="selectPreset(this, 2, 1.5)">
-        <span class="preset-name">Small Insert</span>
-        <span class="preset-dim">2 × 1.5 in</span>
-      </button>
-      <button class="preset-btn" onclick="selectPreset(this, 10, 7.5)">
-        <span class="preset-name">Landscape Letter</span>
-        <span class="preset-dim">10 × 7.5 in</span>
-      </button>
-      <button class="preset-btn" onclick="selectPreset(this, 0, 0)" id="preset-custom">
-        <span class="preset-name">Custom</span>
-        <span class="preset-dim">enter below</span>
-      </button>
+      <button class="preset-btn active" onclick="selectPreset(this, 13.333, 7.5)"><span class="preset-name">PowerPoint Slide</span><span class="preset-dim">13.33 × 7.5 in</span></button>
+      <button class="preset-btn" onclick="selectPreset(this, 10, 7.5)"><span class="preset-name">Landscape Letter</span><span class="preset-dim">10 × 7.5 in</span></button>
+      <button class="preset-btn" onclick="selectPreset(this, 16, 9)"><span class="preset-name">Wide 16:9</span><span class="preset-dim">16 × 9 in</span></button>
+      <button class="preset-btn" onclick="selectPreset(this, 0, 0)" id="preset-custom"><span class="preset-name">Custom</span><span class="preset-dim">enter below</span></button>
     </div>
-
     <div class="export-custom-row">
-      <div class="export-field">
-        <label>Width (in)</label>
-        <input type="number" id="exp-w" value="13.333" min="0.5" max="40" step="0.1">
-      </div>
+      <div class="export-field"><label>Width (in)</label><input type="number" id="exp-w" value="13.333" min="0.5" max="60" step="0.1"></div>
       <span class="export-x">×</span>
-      <div class="export-field">
-        <label>Height (in)</label>
-        <input type="number" id="exp-h" value="7.5" min="0.5" max="40" step="0.1">
-      </div>
-      <div class="export-field">
-        <label>DPI</label>
-        <input type="number" id="exp-dpi" value="150" min="72" max="300" step="1">
-      </div>
+      <div class="export-field"><label>Height (in)</label><input type="number" id="exp-h" value="7.5" min="0.5" max="60" step="0.1"></div>
+      <div class="export-field"><label>DPI</label><input type="number" id="exp-dpi" value="150" min="72" max="300" step="1"></div>
     </div>
-
-    <div id="exp-px-preview" style="font-size:12px;color:var(--muted);margin-bottom:12px;text-align:center;">
-      Output: 2000 × 1125 px
-    </div>
-
+    <div id="exp-px-preview" style="font-size:12px;color:var(--muted);margin-bottom:12px;">Output: 2000 × 1125 px</div>
     <div class="export-card-btns">
-      <button class="toolbar-btn primary" onclick="doExportPNG()">⬇ Export PNG</button>
+      <button class="toolbar-btn primary" onclick="doExport()">⬇ Export PNG</button>
       <button class="toolbar-btn" onclick="closeExport()">Cancel</button>
     </div>
-    <div id="exp-status" style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center;min-height:18px;"></div>
+    <div id="exp-status" style="font-size:12px;color:var(--muted);margin-top:10px;min-height:18px;"></div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div id="confirm-modal">
+  <div class="confirm-card">
+    <h2 id="confirm-title">Are you sure?</h2>
+    <p id="confirm-body"></p>
+    <div class="confirm-card-btns">
+      <button class="toolbar-btn danger" id="confirm-ok">Yes, continue</button>
+      <button class="toolbar-btn" onclick="closeConfirm()">Cancel</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* ═══════════════════════════════════════════
-   STATE
-═══════════════════════════════════════════ */
-let mode = 'edit'; // 'edit' | 'connect'
-let connections = []; // {from: id, to: id, fromCol, toCol}
-let connectFrom = null; // {id, col}
-let boxIdCounter = 100;
+/* ═══════════════════════════════════════════════════════════════
+   MODEL  — one shared source of truth for both views.
+   categories  = fishbone "main bones"  = KDD "key drivers"
+   items       = fishbone "sub bones"   = KDD "2° drivers"
+   effectText  = fishbone head          (the problem / effect)
+   aimText     = KDD aim statement       (independent of the head)
+   interventions / metrics / connections = KDD-only
+═══════════════════════════════════════════════════════════════ */
+const PALETTE = ['#3b82f6','#8b5cf6','#22c55e','#f59e0b','#ef4444','#14b8a6','#ec4899','#6366f1','#84cc16','#f97316'];
 
-const KD_COLORS = ['#4ade80','#3b82f6','#8b5cf6','#a78bfa','#22c55e','#f59e0b','#ef4444','#14b8a6'];
-const ADJACENT = {kd:'sd', sd:'int', int:'met', met:null, aim:'kd'};
-const COL_ORDER = ['aim','kd','sd','int','met'];
+function uid(prefix){ return prefix + Math.random().toString(36).slice(2,8) + (idCounter++); }
+let idCounter = 1;
 
-/* ═══════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════ */
-const DEFAULT_DATA = {
-  kd: [
-    {id:'kd1', text:'Key Driver 1', color:'#3b82f6'},
-    {id:'kd2', text:'Key Driver 2', color:'#8b5cf6'},
-    {id:'kd3', text:'Key Driver 3', color:'#14b8a6'},
-  ],
-  sd: [
-    {id:'sd1', text:'Secondary Driver 1'},
-    {id:'sd2', text:'Secondary Driver 2'},
-    {id:'sd3', text:'Secondary Driver 3'},
-    {id:'sd4', text:'Secondary Driver 4'},
-    {id:'sd5', text:'Secondary Driver 5'},
-  ],
-  int: [
-    {id:'int1', text:'Intervention 1'},
-    {id:'int2', text:'Intervention 2'},
-    {id:'int3', text:'Intervention 3'},
-  ],
-  met: [
-    {id:'met1', text:'Metric 1'},
-    {id:'met2', text:'Metric 2'},
-    {id:'met3', text:'Metric 3'},
-  ],
-};
+let state = defaultState();
 
-const DEFAULT_CONNS = [];
-
-function init() {
-  buildCol('kd', DEFAULT_DATA.kd);
-  buildCol('sd', DEFAULT_DATA.sd);
-  buildCol('int', DEFAULT_DATA.int);
-  buildCol('met', DEFAULT_DATA.met);
-  DEFAULT_CONNS.forEach(c => connections.push({from: c.from, to: c.to}));
-  setTimeout(renderConnections, 100);
+function defaultState(){
+  const c1 = 'c_checklist', c2 = 'c_comm', c3 = 'c_workflow', c4 = 'c_prep';
+  return {
+    version: 2,
+    view: 'fishbone',
+    effectText: 'Increased SERS events and reduction in pre-op checklist compliance',
+    aimText: 'Improve pre-procedural readiness through enhanced pre-op checklist compliance and decreased safety events.',
+    categories: [
+      {id:c1, text:'Checklist design / content', color:'#3b82f6', hiddenInKdd:false},
+      {id:c2, text:'Communication & handoff gaps', color:'#f59e0b', hiddenInKdd:false},
+      {id:c3, text:'Workflow, timing & process failures', color:'#8b5cf6', hiddenInKdd:false},
+      {id:c4, text:'Patient prep & access', color:'#22c55e', hiddenInKdd:false},
+    ],
+    items: [
+      {id:uid('i_'), text:'Surgical consent part of pre-op checklist for MRI unnecessary', categoryId:c1, hiddenInKdd:false},
+      {id:uid('i_'), text:'DVT screen not needed for MRI', categoryId:c1, hiddenInKdd:false},
+      {id:uid('i_'), text:'All procedures have same requirements even though all are different', categoryId:c1, hiddenInKdd:false},
+      {id:uid('i_'), text:'Handoff tool filled out inconsistently in pre-op', categoryId:c2, hiddenInKdd:false},
+      {id:uid('i_'), text:'Limited OR–PACU handoff', categoryId:c2, hiddenInKdd:false},
+      {id:uid('i_'), text:'Consents not completed in a timely manner', categoryId:c3, hiddenInKdd:false},
+      {id:uid('i_'), text:'Compound delays', categoryId:c3, hiddenInKdd:false},
+      {id:uid('i_'), text:'Inpatients arrive without emergency equipment or monitors', categoryId:c4, hiddenInKdd:false},
+      {id:uid('i_'), text:'Inconsistent access status upon transfer', categoryId:c4, hiddenInKdd:false},
+    ],
+    interventions: [
+      {id:uid('v_'), text:'Revise pre-op checklist'},
+      {id:uid('v_'), text:'Reinvigorate the “why” through education'},
+    ],
+    metrics: [
+      {id:uid('m_'), text:'Pre-op checklist compliance %'},
+    ],
+    connections: [],       // {from, to, kind:'default'|'manual'}  built on load
+    removedDefaults: [],   // "from|to" keys of default lines the user deleted
+    fontSizes: { aim:13, kd:14, sd:13, int:13, met:13 },   // KDD columns
+    fishFont: { head:21, main:15, sub:12 },                // fishbone: large > medium > small
+  };
 }
 
+/* lookups */
+const findCat  = id => state.categories.find(c => c.id === id);
+const findItem = id => state.items.find(i => i.id === id);
+const itemsOf  = catId => state.items.filter(i => i.categoryId === catId);
+
 /* ═══════════════════════════════════════════
-   BOX BUILDING
+   BOOT
 ═══════════════════════════════════════════ */
-function colOf(id) {
-  if (id.startsWith('kd')) return 'kd';
-  if (id.startsWith('sd')) return 'sd';
-  if (id.startsWith('int')) return 'int';
-  if (id.startsWith('met')) return 'met';
-  return null;
-}
-
-function buildCol(col, items) {
-  const body = document.getElementById(col + '-body');
-  body.innerHTML = '';
-  items.forEach(item => body.appendChild(makeBox(col, item.id, item.text, item.color)));
-  body.appendChild(makeAddBtn(col));
-}
-
-function makeBox(col, id, text, color) {
-  const div = document.createElement('div');
-  div.className = 'box';
-  div.id = id;
-  div.setAttribute('data-col', col);
-
-  if (col === 'kd') {
-    div.style.background = color || KD_COLORS[0];
-    div.style.borderColor = color || KD_COLORS[0];
-    // color picker
-    const strip = document.createElement('div');
-    strip.className = 'kd-color-strip';
-
-    // swatches row
-    const swatchRow = document.createElement('div');
-    swatchRow.className = 'kd-swatches-row';
-    KD_COLORS.forEach(c => {
-      const sw = document.createElement('div');
-      sw.className = 'kd-swatch';
-      sw.style.background = c;
-      sw.onclick = (e) => { e.stopPropagation(); div.style.background = c; div.style.borderColor = c; };
-      swatchRow.appendChild(sw);
-    });
-    strip.appendChild(swatchRow);
-
-    // hex input row
-    const hexRow = document.createElement('div');
-    hexRow.className = 'kd-hex-row';
-    const hexInput = document.createElement('input');
-    hexInput.type = 'text';
-    hexInput.className = 'kd-hex-input';
-    hexInput.placeholder = '#2563eb';
-    hexInput.maxLength = 7;
-    hexInput.onclick = (e) => e.stopPropagation();
-    hexInput.onkeydown = (e) => {
-      e.stopPropagation();
-      if (e.key === 'Enter') applyHex();
-    };
-    const hexApply = document.createElement('button');
-    hexApply.className = 'kd-hex-apply';
-    hexApply.textContent = 'Apply';
-    const applyHex = () => {
-      let val = hexInput.value.trim();
-      if (!val.startsWith('#')) val = '#' + val;
-      if (/^#[0-9a-fA-F]{6}$/.test(val)) {
-        div.style.background = val;
-        div.style.borderColor = val;
-        hexInput.style.borderColor = '';
-      } else {
-        hexInput.style.borderColor = 'var(--danger)';
-      }
-    };
-    hexApply.onclick = (e) => { e.stopPropagation(); applyHex(); };
-    hexRow.appendChild(hexInput);
-    hexRow.appendChild(hexApply);
-    strip.appendChild(hexRow);
-
-    // text color toggle row
-    const textColorRow = document.createElement('div');
-    textColorRow.className = 'kd-hex-row';
-    textColorRow.style.justifyContent = 'center';
-    textColorRow.style.gap = '6px';
-
-    const labelEl = document.createElement('span');
-    labelEl.textContent = 'Text:';
-    labelEl.style.cssText = 'font-size:11px;color:var(--muted);';
-
-    const makeTextBtn = (label, color, bgColor) => {
-      const btn = document.createElement('button');
-      btn.textContent = label;
-      btn.style.cssText = `font-size:11px;padding:2px 10px;border-radius:4px;border:1px solid var(--border);cursor:pointer;font-family:sans-serif;background:${bgColor};color:${color};`;
-      btn.onclick = (e) => { e.stopPropagation(); div.style.color = color; };
-      btn.onmouseenter = () => btn.style.borderColor = '#9ca3af';
-      btn.onmouseleave = () => btn.style.borderColor = 'var(--border)';
-      return btn;
-    };
-
-    textColorRow.appendChild(labelEl);
-    textColorRow.appendChild(makeTextBtn('White', '#ffffff', '#374151'));
-    textColorRow.appendChild(makeTextBtn('Black', '#000000', '#f9fafb'));
-    strip.appendChild(textColorRow);
-
-    div.appendChild(strip);
+function boot(){
+  let loaded = null;
+  // 1) share link beats everything
+  if (location.hash.startsWith('#d=')) {
+    loaded = tryDecode(location.hash.slice(3));
+    if (loaded) toast('Loaded diagram from share link');
   }
-
-  // SD border color picker
-  if (col === 'sd') {
-    const strip = document.createElement('div');
-    strip.className = 'kd-color-strip';
-
-    // swatches row
-    const swatchRow = document.createElement('div');
-    swatchRow.className = 'kd-swatches-row';
-    KD_COLORS.forEach(c => {
-      const sw = document.createElement('div');
-      sw.className = 'kd-swatch';
-      sw.style.background = c;
-      sw.style.border = '2px solid #e5e7eb';
-      sw.onclick = (e) => { e.stopPropagation(); div.style.borderColor = c; };
-      swatchRow.appendChild(sw);
-    });
-
-    // reset swatch (grey)
-    const resetSw = document.createElement('div');
-    resetSw.className = 'kd-swatch';
-    resetSw.style.cssText = 'background:#d4d8e0;border:2px solid #9ca3af;position:relative;';
-    resetSw.title = 'Reset to default';
-    resetSw.onclick = (e) => { e.stopPropagation(); div.style.borderColor = 'var(--border)'; };
-    swatchRow.appendChild(resetSw);
-
-    strip.appendChild(swatchRow);
-
-    // hex row
-    const hexRow = document.createElement('div');
-    hexRow.className = 'kd-hex-row';
-    const hexInput = document.createElement('input');
-    hexInput.type = 'text';
-    hexInput.className = 'kd-hex-input';
-    hexInput.placeholder = '#2563eb';
-    hexInput.maxLength = 7;
-    hexInput.onclick = (e) => e.stopPropagation();
-    const hexApply = document.createElement('button');
-    hexApply.className = 'kd-hex-apply';
-    hexApply.textContent = 'Apply';
-    const applyHex = () => {
-      let val = hexInput.value.trim();
-      if (!val.startsWith('#')) val = '#' + val;
-      if (/^#[0-9a-fA-F]{6}$/.test(val)) {
-        div.style.borderColor = val;
-        hexInput.style.borderColor = '';
-      } else {
-        hexInput.style.borderColor = 'var(--danger)';
-      }
-    };
-    hexInput.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') applyHex(); };
-    hexApply.onclick = (e) => { e.stopPropagation(); applyHex(); };
-    hexRow.appendChild(hexInput);
-    hexRow.appendChild(hexApply);
-    strip.appendChild(hexRow);
-
-    div.appendChild(strip);
+  // 2) browser cache
+  if (!loaded) {
+    try {
+      const raw = localStorage.getItem('fb-kdd-state');
+      if (raw) loaded = JSON.parse(raw);
+    } catch(e){}
   }
-
-  const span = document.createElement('div');
-  span.className = 'box-text';
-  span.contentEditable = 'false';
-  span.setAttribute('data-placeholder', 'Enter text…');
-  span.textContent = text;
-  div.appendChild(span);
-
-  // delete btn
-  const del = document.createElement('button');
-  del.className = 'delete-btn';
-  del.textContent = '×';
-  del.title = 'Delete box';
-  del.onclick = (e) => { e.stopPropagation(); deleteBox(id); };
-  div.appendChild(del);
-
-  div.onclick = () => onBoxClick(id, col);
-  return div;
+  if (loaded) state = migrate(loaded);
+  seedDefaultConnections();
+  applyFontLabels();
+  renderFontValues();
+  switchView(state.view || 'fishbone', true);
 }
 
-function makeAddBtn(col) {
-  const btn = document.createElement('button');
-  btn.className = 'add-btn';
-  btn.textContent = '+ Add box';
-  btn.onclick = () => addBox(col);
-  return btn;
+function migrate(s){
+  s.version = 2;
+  s.fontSizes = Object.assign({ aim:13, kd:14, sd:13, int:13, met:13 }, s.fontSizes || {});
+  s.fishFont = Object.assign({ head:21, main:15, sub:12 }, s.fishFont || {});
+  s.categories = (s.categories || []).map(c => ({ hiddenInKdd:false, color:'#3b82f6', ...c }));
+  s.items = (s.items || []).map(i => ({ hiddenInKdd:false, ...i }));
+  s.interventions = s.interventions || [];
+  s.metrics = s.metrics || [];
+  s.connections = s.connections || [];
+  s.removedDefaults = s.removedDefaults || [];
+  s.effectText = s.effectText || '';
+  s.aimText = s.aimText || '';
+  return s;
 }
 
-function addBox(col) {
-  const body = document.getElementById(col + '-body');
-  const id = col + (++boxIdCounter);
-  const color = col === 'kd' ? KD_COLORS[Math.floor(Math.random()*KD_COLORS.length)] : null;
-  const box = makeBox(col, id, 'New box', color);
-  body.insertBefore(box, body.lastElementChild);
-  // auto-edit
-  setTimeout(() => { startEditBox(id); }, 50);
-  renderConnections();
-}
-
-function deleteBox(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
-  connections = connections.filter(c => c.from !== id && c.to !== id);
-  renderConnections();
+/* ensure every item has a default item→category line, unless the user deleted that one */
+function seedDefaultConnections(){
+  state.items.forEach(it => {
+    if (!it.categoryId) return;
+    const key = it.categoryId + '|' + it.id;
+    if (state.removedDefaults.includes(key)) return;
+    const exists = state.connections.some(c => c.from === it.categoryId && c.to === it.id);
+    if (!exists) state.connections.push({ from: it.categoryId, to: it.id, kind: 'default' });
+  });
 }
 
 /* ═══════════════════════════════════════════
-   AIM BOX EDITING
+   PERSISTENCE  (3 ways)
 ═══════════════════════════════════════════ */
-function editAim() {
-  if (mode !== 'edit') return;
-  const t = document.getElementById('aim-text');
-  t.contentEditable = 'true';
-  t.focus();
+function serialize(){
+  // strip nothing — the model is already plain data
+  return JSON.stringify(state);
+}
+function persist(){
+  try { localStorage.setItem('fb-kdd-state', serialize()); } catch(e){}
+}
+function tryDecode(encoded){
+  try { return JSON.parse(decodeURIComponent(escape(atob(encoded)))); }
+  catch(e){ return null; }
+}
+function encodeForUrl(){
+  return btoa(unescape(encodeURIComponent(serialize())));
+}
+
+function saveToFile(){
+  closeMenu();
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.download = 'diagram-' + new Date().toISOString().slice(0,10) + '.json';
+  a.href = url; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Saved to file');
+}
+function openFile(){ closeMenu(); document.getElementById('file-input').click(); }
+function handleFileLoad(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      state = migrate(JSON.parse(reader.result));
+      seedDefaultConnections();
+      renderFontValues(); applyFontSizesLive();
+      switchView(state.view || 'fishbone', true);
+      toast('Diagram loaded');
+    } catch(err){ toast('Could not read that file'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+function copyShareLink(){
+  closeMenu();
+  const link = location.origin + location.pathname + '#d=' + encodeForUrl();
+  history.replaceState(null, '', '#d=' + encodeForUrl());
+  const done = () => toast('Share link copied to clipboard');
+  if (navigator.clipboard) navigator.clipboard.writeText(link).then(done).catch(() => prompt('Copy this link:', link));
+  else prompt('Copy this link:', link);
+}
+function manualSaveBrowser(){ closeMenu(); persist(); toast('Saved to this browser'); }
+function resetAll(){
+  closeMenu();
+  openConfirm('Clear everything?', 'This starts a blank diagram. Anything not saved to a file or link will be lost.', () => {
+    state = defaultState();
+    state.categories = []; state.items = []; state.interventions = []; state.metrics = [];
+    state.connections = []; state.effectText = ''; state.aimText = '';
+    persist();
+    switchView(state.view, true);
+    toast('Cleared');
+  });
+}
+
+/* ═══════════════════════════════════════════
+   SAVE MENU
+═══════════════════════════════════════════ */
+function toggleMenu(e){ e.stopPropagation(); document.getElementById('save-menu').classList.toggle('open'); }
+function closeMenu(){ document.getElementById('save-menu').classList.remove('open'); }
+document.addEventListener('click', e => { if (!e.target.closest('#save-menu')) closeMenu(); });
+
+/* ═══════════════════════════════════════════
+   VIEW SWITCHING
+═══════════════════════════════════════════ */
+function switchView(v, force){
+  if (v === state.view && !force) { /* still rebuild target */ }
+  state.view = v;
+  document.getElementById('vb-fish').classList.toggle('active', v === 'fishbone');
+  document.getElementById('vb-kdd').classList.toggle('active', v === 'kdd');
+  document.getElementById('fishbone-view').classList.toggle('hidden', v !== 'fishbone');
+  document.getElementById('kdd-view').classList.toggle('hidden', v !== 'kdd');
+
+  // toolbar groups
+  document.querySelectorAll('.view-controls').forEach(el => {
+    el.classList.toggle('hidden', el.dataset.view !== v);
+  });
+  document.querySelectorAll('[data-fontview="kdd"]').forEach(el => el.classList.toggle('hidden', v !== 'kdd'));
+  applyFontLabels();
+
+  renderFontValues();
+  if (v === 'fishbone') buildFishbone();
+  else buildKdd();
+  persist();
+}
+
+function applyFontLabels(){
+  const fish = state.view === 'fishbone';
+  document.getElementById('fl-aim').textContent = fish ? 'Head' : 'Aim';
+  document.getElementById('fl-kd').textContent  = fish ? 'Main bones' : 'Key drivers';
+  document.getElementById('fl-sd').textContent  = fish ? 'Causes' : '2° drivers';
+}
+
+/* ═══════════════════════════════════════════
+   GENERIC INLINE EDITING
+   el = the .box-text element; commit(text) writes to the model
+═══════════════════════════════════════════ */
+function makeEditable(textEl, commit){
+  textEl.addEventListener('click', e => {
+    if (state.view === 'kdd' && mode === 'connect') return; // let connect handler run
+    e.stopPropagation();
+    startEdit(textEl, commit);
+  });
+}
+function startEdit(textEl, commit){
+  textEl.contentEditable = 'true';
+  textEl.focus();
   const range = document.createRange();
-  range.selectNodeContents(t);
-  window.getSelection().removeAllRanges();
-  window.getSelection().addRange(range);
-  t.onblur = () => { t.contentEditable = 'false'; };
-  t.onpaste = stripPaste;
+  range.selectNodeContents(textEl);
+  const sel = window.getSelection();
+  sel.removeAllRanges(); sel.addRange(range);
+  textEl.onpaste = stripPaste;
+  textEl.onblur = () => {
+    textEl.contentEditable = 'false';
+    commit(textEl.textContent.trim());
+    persist();
+  };
 }
-
-/* ═══════════════════════════════════════════
-   EDIT BOX TEXT
-═══════════════════════════════════════════ */
-function stripPaste(e) {
+function stripPaste(e){
   e.preventDefault();
   const text = (e.clipboardData || window.clipboardData).getData('text/plain');
   document.execCommand('insertText', false, text);
 }
 
-function startEditBox(id) {
-  const box = document.getElementById(id);
-  if (!box) return;
-  const span = box.querySelector('.box-text');
-  span.contentEditable = 'true';
-  span.focus();
-  const range = document.createRange();
-  range.selectNodeContents(span);
-  window.getSelection().removeAllRanges();
-  window.getSelection().addRange(range);
-  span.onblur = () => { span.contentEditable = 'false'; };
-  span.onpaste = stripPaste;
+/* ═══════════════════════════════════════════
+   SHARED COLOR STRIP
+═══════════════════════════════════════════ */
+function makeColorStrip(getColor, setColor, includeTextToggle, setTextColor){
+  const strip = document.createElement('div');
+  strip.className = 'color-strip';
+  strip.onclick = e => e.stopPropagation();
+
+  const swatches = document.createElement('div');
+  swatches.className = 'swatches-row';
+  PALETTE.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'swatch'; sw.style.background = c;
+    sw.onclick = () => setColor(c);
+    swatches.appendChild(sw);
+  });
+  strip.appendChild(swatches);
+
+  const hexRow = document.createElement('div');
+  hexRow.className = 'hex-row';
+  const input = document.createElement('input');
+  input.className = 'hex-input'; input.placeholder = getColor() || '#2563eb'; input.maxLength = 7;
+  const apply = document.createElement('button');
+  apply.className = 'hex-apply'; apply.textContent = 'Apply';
+  const run = () => {
+    let v = input.value.trim(); if (!v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) { setColor(v); input.style.borderColor=''; }
+    else input.style.borderColor = 'var(--danger)';
+  };
+  input.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') run(); };
+  apply.onclick = run;
+  hexRow.appendChild(input); hexRow.appendChild(apply);
+  strip.appendChild(hexRow);
+
+  if (includeTextToggle) {
+    const row = document.createElement('div');
+    row.className = 'text-toggle-row';
+    const lbl = document.createElement('span'); lbl.textContent = 'Text:';
+    const mk = (label, color, bg) => {
+      const b = document.createElement('button');
+      b.className = 'text-toggle-btn'; b.textContent = label;
+      b.style.background = bg; b.style.color = color;
+      b.onclick = () => setTextColor(color);
+      return b;
+    };
+    row.appendChild(lbl);
+    row.appendChild(mk('White', '#ffffff', '#374151'));
+    row.appendChild(mk('Black', '#000000', '#f9fafb'));
+    strip.appendChild(row);
+  }
+  return strip;
+}
+
+function makeDeleteBtn(onDel){
+  const b = document.createElement('button');
+  b.className = 'delete-btn'; b.textContent = '×'; b.title = 'Delete';
+  b.onclick = e => { e.stopPropagation(); onDel(); };
+  return b;
 }
 
 /* ═══════════════════════════════════════════
-   MODE
+   MODEL MUTATIONS
 ═══════════════════════════════════════════ */
-function setMode(m) {
-  mode = m;
-  connectFrom = null;
-  clearHighlights();
+function addCategory(){
+  const color = PALETTE[state.categories.length % PALETTE.length];
+  const cat = { id: uid('c_'), text: 'New main bone', color, hiddenInKdd:false };
+  state.categories.push(cat);
+  rebuild(); persist();
+}
+function deleteCategory(id){
+  state.categories = state.categories.filter(c => c.id !== id);
+  const removedItems = itemsOf(id).map(i => i.id);
+  state.items = state.items.filter(i => i.categoryId !== id);
+  state.connections = state.connections.filter(c =>
+    c.from !== id && c.to !== id && !removedItems.includes(c.from) && !removedItems.includes(c.to));
+  rebuild(); persist();
+}
+function addItem(catId){
+  const it = { id: uid('i_'), text: 'New cause', categoryId: catId, hiddenInKdd:false };
+  state.items.push(it);
+  state.connections.push({ from: catId, to: it.id, kind: 'default' });
+  rebuild(); persist();
+}
+/* delete an item. In the fishbone it's a real delete; in the KDD it only hides it. */
+function deleteItem(id, hideOnly){
+  if (hideOnly) {
+    const it = findItem(id); if (it) it.hiddenInKdd = true;
+  } else {
+    state.items = state.items.filter(i => i.id !== id);
+    state.connections = state.connections.filter(c => c.from !== id && c.to !== id);
+  }
+  rebuild(); persist();
+}
+function hideCategoryInKdd(id){
+  const c = findCat(id); if (c) c.hiddenInKdd = true;
+  rebuild(); persist();
+}
+function addIntervention(){ state.interventions.push({id:uid('v_'), text:'New intervention'}); rebuild(); persist(); }
+function addMetric(){ state.metrics.push({id:uid('m_'), text:'New metric'}); rebuild(); persist(); }
+function deleteSimple(kind, id){
+  if (kind === 'int') state.interventions = state.interventions.filter(x => x.id !== id);
+  if (kind === 'met') state.metrics = state.metrics.filter(x => x.id !== id);
+  state.connections = state.connections.filter(c => c.from !== id && c.to !== id);
+  rebuild(); persist();
+}
 
+function rebuild(){ if (state.view === 'fishbone') buildFishbone(); else buildKdd(); }
+
+/* ═══════════════════════════════════════════
+   FISHBONE RENDERING
+═══════════════════════════════════════════ */
+const FB = {
+  COLW: 188, HEADW: 250,
+  PADL: 48, PADR: 48, PADTOP: 44, PADBOT: 44,
+  GAP_SPINE_FIRST: 58,   // bare main bone between spine and the first cause (spaces bones off the spine)
+  ROWGAP: 14,            // vertical gap between stacked cause boxes
+  LABELGAP: 28,          // gap between the outermost cause and the main-bone label
+  BRANCHLEN: 26,         // length of each little sub-bone branch off the main bone
+  SLOPE: 0.5,            // horizontal run / vertical rise of a main bone (≈63° from horizontal)
+  BASESTEP: 188, CATGAP: 46,
+};
+
+/* remove the other view's boxes so element IDs are never duplicated in the DOM */
+function clearKddDom(){
+  ['kd-body','sd-body','int-body','met-body'].forEach(id => { const b=document.getElementById(id); if(b) b.innerHTML=''; });
+  const cs=document.getElementById('conn-svg'); if(cs) cs.innerHTML='';
+}
+function clearFishboneDom(){
+  const c=document.getElementById('fish-canvas'); if(c) c.querySelectorAll('.fish-box').forEach(el=>el.remove());
+  const s=document.getElementById('fish-svg'); if(s) s.innerHTML='';
+  const e=document.getElementById('fish-empty'); if(e) e.remove();
+}
+
+function buildFishbone(){
+  clearKddDom();   // no leftover KDD boxes sharing IDs
+  const canvas = document.getElementById('fish-canvas');
+  const svg = document.getElementById('fish-svg');
+  // clear previous boxes
+  canvas.querySelectorAll('.fish-box').forEach(el => el.remove());
+  const existingEmpty = document.getElementById('fish-empty');
+  if (existingEmpty) existingEmpty.remove();
+  svg.innerHTML = '';
+
+  const ff = state.fishFont;
+
+  // head box
+  const head = document.createElement('div');
+  head.className = 'fish-box fish-head';
+  head.id = 'fish-head';
+  head.style.width = FB.HEADW + 'px';
+  const headText = document.createElement('div');
+  headText.className = 'box-text';
+  headText.setAttribute('data-placeholder', 'Problem / effect…');
+  headText.textContent = state.effectText;
+  headText.style.fontSize = ff.head + 'px';
+  head.appendChild(headText);
+  makeEditable(headText, t => state.effectText = t);
+  canvas.appendChild(head);
+
+  // category + sub boxes
+  const cats = state.categories.map((cat, idx) => {
+    const el = document.createElement('div');
+    el.className = 'fish-box fish-cat'; el.id = cat.id;
+    el.style.width = FB.COLW + 'px';
+    el.style.background = cat.color;
+    const tx = document.createElement('div');
+    tx.className = 'box-text'; tx.setAttribute('data-placeholder', 'Main bone…');
+    tx.textContent = cat.text; tx.style.fontSize = ff.main + 'px';
+    el.appendChild(tx);
+    makeEditable(tx, t => cat.text = t);
+    el.appendChild(makeDeleteBtn(() => deleteCategory(cat.id)));
+    // add-sub button
+    const addSub = document.createElement('button');
+    addSub.className = 'fish-add-sub'; addSub.textContent = '＋ cause';
+    addSub.onclick = e => { e.stopPropagation(); addItem(cat.id); };
+    el.appendChild(addSub);
+    // color strip
+    el.appendChild(makeColorStrip(
+      () => cat.color,
+      c => { cat.color = c; buildFishbone(); persist(); },
+      true,
+      tc => { el.style.color = tc; cat.textColor = tc; persist(); }
+    ));
+    if (cat.textColor) el.style.color = cat.textColor;
+    canvas.appendChild(el);
+
+    const subs = itemsOf(cat.id).map(it => {
+      const s = document.createElement('div');
+      s.className = 'fish-box fish-sub'; s.id = it.id;
+      s.style.width = FB.COLW + 'px';
+      s.style.borderColor = cat.color;
+      const stx = document.createElement('div');
+      stx.className = 'box-text'; stx.setAttribute('data-placeholder', 'Cause…');
+      stx.textContent = it.text; stx.style.fontSize = ff.sub + 'px';
+      s.appendChild(stx);
+      makeEditable(stx, t => it.text = t);
+      s.appendChild(makeDeleteBtn(() => deleteItem(it.id, false)));
+      canvas.appendChild(s);
+      return { it, el: s };
+    });
+    return { cat, el, idx, subs };
+  });
+
+  if (cats.length === 0) {
+    const empty = document.createElement('div');
+    empty.id = 'fish-empty';
+    empty.innerHTML = 'No main bones yet — click <b>＋ Main bone</b> to start.';
+    canvas.appendChild(empty);
+  }
+
+  layoutFishbone(cats, head);
+}
+
+function layoutFishbone(cats, head){
+  const canvas = document.getElementById('fish-canvas');
+  const svg = document.getElementById('fish-svg');
+
+  // measure heights, derive each bone's geometry
+  const headH = head.offsetHeight;
+  cats.forEach(c => {
+    c.labelH = c.el.offsetHeight;
+    c.subs.forEach(s => s.h = s.el.offsetHeight);
+    const subsSpan = c.subs.reduce((a, s) => a + s.h + FB.ROWGAP, 0);
+    // boneRise = vertical distance from spine to the label's inner edge
+    c.boneRise = FB.GAP_SPINE_FIRST + subsSpan + (c.subs.length ? FB.LABELGAP : 0);
+    c.boneRun = c.boneRise * FB.SLOPE;
+    c.blockH = c.boneRise + c.labelH;                               // full vertical extent
+    c.footprint = c.boneRun + FB.BRANCHLEN + FB.COLW;               // how far the bone reaches toward the tail
+  });
+
+  const top = cats.filter(c => c.idx % 2 === 0);
+  const bot = cats.filter(c => c.idx % 2 === 1);
+  const topExtent = top.reduce((m,c) => Math.max(m, c.blockH), 0);
+  const botExtent = bot.reduce((m,c) => Math.max(m, c.blockH), 0);
+  const maxFootprint = cats.reduce((m,c) => Math.max(m, c.footprint), FB.COLW);
+
+  const centerY = FB.PADTOP + Math.max(topExtent, 110);
+  const canvasH = centerY + Math.max(botExtent, 110) + FB.PADBOT;
+
+  // horizontal: bones lean toward the tail, so each attach point needs room to its left
+  const nCats = cats.length;
+  const step = Math.max(FB.BASESTEP, (maxFootprint + FB.CATGAP) / 2);
+  const firstX = FB.PADL + maxFootprint;
+  const lastX = firstX + Math.max(nCats - 1, 0) * step;
+  const spineStartX = FB.PADL;
+  const headX = lastX + 96;
+  const canvasW = Math.max(headX + FB.HEADW + FB.PADR, (document.getElementById('fishbone-view').clientWidth || 1100));
+
+  canvas.style.width = canvasW + 'px';
+  canvas.style.height = canvasH + 'px';
+  svg.setAttribute('width', canvasW);
+  svg.setAttribute('height', canvasH);
+  svg.setAttribute('viewBox', `0 0 ${canvasW} ${canvasH}`);
+
+  head.style.left = headX + 'px';
+  head.style.top = (centerY - headH/2) + 'px';
+
+  const lines = []; // {x1,y1,x2,y2,color,width}
+
+  function placeSide(sideCats, isTop){
+    const dir = isTop ? -1 : 1;   // outward vertical direction
+    sideCats.forEach((c) => {
+      const ax = firstX + c.idx * step;          // spine attach point
+      const tipX = ax - c.boneRun;               // label/tip leans toward the tail
+      const labelInnerY = centerY + dir * c.boneRise;
+      // bone x at a given y (linear from attach A→tip)
+      const boneX = y => ax - c.boneRun * (Math.abs(y - centerY) / c.boneRise);
+
+      // main bone
+      lines.push({ x1: ax, y1: centerY, x2: tipX, y2: labelInnerY, color: c.cat.color, width: 4 });
+
+      // label at the tip
+      const labelTop = isTop ? (labelInnerY - c.labelH) : labelInnerY;
+      c.el.style.left = (tipX - FB.COLW/2) + 'px';
+      c.el.style.top = labelTop + 'px';
+
+      // cause boxes branch off the bone, stacked from the spine outward
+      let cursor = centerY + dir * FB.GAP_SPINE_FIRST;
+      c.subs.forEach(s => {
+        const sTop = isTop ? (cursor - s.h) : cursor;
+        const cy = sTop + s.h/2;
+        const bx = boneX(cy);
+        s.el.style.left = (bx - FB.BRANCHLEN - FB.COLW) + 'px';
+        s.el.style.top = sTop + 'px';
+        // little branch from the box to the main bone
+        lines.push({ x1: bx - FB.BRANCHLEN, y1: cy, x2: bx, y2: cy, color: c.cat.color, width: 2 });
+        cursor = isTop ? (sTop - FB.ROWGAP) : (cursor + s.h + FB.ROWGAP);
+      });
+    });
+  }
+  placeSide(top, true);
+  placeSide(bot, false);
+
+  // ── draw SVG: spine + arrow + bones ──
+  const NS = 'http://www.w3.org/2000/svg';
+  // spine
+  const spine = document.createElementNS(NS, 'line');
+  spine.setAttribute('x1', spineStartX); spine.setAttribute('y1', centerY);
+  spine.setAttribute('x2', headX); spine.setAttribute('y2', centerY);
+  spine.setAttribute('stroke', '#111827'); spine.setAttribute('stroke-width', 5);
+  spine.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(spine);
+  // arrowhead into head
+  const ah = document.createElementNS(NS, 'polygon');
+  const axp = headX;
+  ah.setAttribute('points', `${axp-16},${centerY-11} ${axp+2},${centerY} ${axp-16},${centerY+11}`);
+  ah.setAttribute('fill', '#111827');
+  svg.appendChild(ah);
+
+  lines.forEach(l => {
+    const ln = document.createElementNS(NS, 'line');
+    ln.setAttribute('x1', l.x1); ln.setAttribute('y1', l.y1);
+    ln.setAttribute('x2', l.x2); ln.setAttribute('y2', l.y2);
+    ln.setAttribute('stroke', l.color); ln.setAttribute('stroke-width', l.width);
+    ln.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(ln);
+  });
+
+  // stash geometry for PNG export
+  fishLayout = { canvasW, canvasH, centerY, headX, spineStartX, headH, lines,
+                 arrow: {x: axp, y: centerY} };
+}
+let fishLayout = null;
+
+/* ═══════════════════════════════════════════
+   KEY DRIVER RENDERING
+═══════════════════════════════════════════ */
+let mode = 'edit';
+let connectFrom = null;
+const COL_ORDER = ['aim','kd','sd','int','met'];
+const BODY_OF = { kd:'kd-body', sd:'sd-body', int:'int-body', met:'met-body' };
+function colOf(id){
+  if (id[0]==='c') return 'kd';
+  if (id[0]==='i') return 'sd';
+  if (id[0]==='v') return 'int';
+  if (id[0]==='m') return 'met';
+  return null;
+}
+
+function buildKdd(){
+  clearFishboneDom();         // no leftover fishbone boxes sharing IDs
+  seedDefaultConnections();   // key driver ↔ 2° driver lines always auto-draw
+  const fs = state.fontSizes;
+  // aim
+  const aimText = document.getElementById('aim-text');
+  aimText.textContent = state.aimText;
+  aimText.style.fontSize = fs.aim + 'px';
+
+  // columns
+  buildKddCol('kd', state.categories.filter(c => !c.hiddenInKdd).map(c => ({id:c.id, text:c.text, color:c.color, textColor:c.textColor, ref:c})), fs.kd);
+  buildKddCol('sd', state.items.filter(i => !i.hiddenInKdd).map(i => ({id:i.id, text:i.text, color:findCat(i.categoryId)?.color, ref:i})), fs.sd);
+  buildKddCol('int', state.interventions.map(v => ({id:v.id, text:v.text, ref:v})), fs.int);
+  buildKddCol('met', state.metrics.map(m => ({id:m.id, text:m.text, ref:m})), fs.met);
+
+  setMode(mode);
+  setTimeout(renderConnections, 30);
+}
+
+function buildKddCol(col, items, fontSize){
+  const body = document.getElementById(BODY_OF[col]);
+  body.innerHTML = '';
+  items.forEach(item => body.appendChild(makeKddBox(col, item, fontSize)));
+  const add = document.createElement('button');
+  add.className = 'add-btn';
+  add.textContent = col === 'kd' ? '+ Add key driver'
+                  : col === 'sd' ? '+ Add 2° driver'
+                  : col === 'int' ? '+ Add intervention' : '+ Add metric';
+  add.onclick = () => {
+    if (col === 'kd') addCategory();
+    else if (col === 'sd') { const c = state.categories[0]; if (!c) { toast('Add a key driver first'); return; } addItem(c.id); }
+    else if (col === 'int') addIntervention();
+    else addMetric();
+  };
+  body.appendChild(add);
+}
+
+function makeKddBox(col, item, fontSize){
+  const div = document.createElement('div');
+  div.className = 'box'; div.id = item.id; div.setAttribute('data-col', col);
+
+  if (col === 'kd') {
+    div.style.background = item.color || PALETTE[0];
+    div.style.borderColor = item.color || PALETTE[0];
+    if (item.textColor) div.style.color = item.textColor;
+    div.appendChild(makeColorStrip(
+      () => item.ref.color,
+      c => { item.ref.color = c; buildKdd(); persist(); },
+      true,
+      tc => { div.style.color = tc; item.ref.textColor = tc; persist(); }
+    ));
+  }
+  if (col === 'sd' && item.color) {
+    div.style.borderColor = item.color;   // tint 2° driver border to match its key driver
+  }
+
+  const tx = document.createElement('div');
+  tx.className = 'box-text'; tx.setAttribute('data-placeholder', 'Enter text…');
+  tx.textContent = item.text; tx.style.fontSize = fontSize + 'px';
+  div.appendChild(tx);
+  makeEditable(tx, t => item.ref.text = t);
+
+  div.appendChild(makeDeleteBtn(() => {
+    if (col === 'kd') hideCategoryInKdd(item.id);     // hide only in KDD
+    else if (col === 'sd') deleteItem(item.id, true); // hide only in KDD
+    else deleteSimple(col, item.id);
+  }));
+
+  div.onclick = () => { if (mode === 'connect') onConnectClick(item.id, col); };
+  return div;
+}
+
+/* ── connect mode ── */
+function setMode(m){
+  mode = m; connectFrom = null; clearHighlights();
   document.getElementById('btn-edit').classList.toggle('active', m === 'edit');
   document.getElementById('btn-connect').classList.toggle('active', m === 'connect');
-
   const hint = document.getElementById('mode-hint');
-  if (m === 'edit') {
-    hint.innerHTML = '<strong>Edit mode:</strong> Click any box to edit its text. Hover to delete.';
-  } else {
-    hint.innerHTML = '<strong>Connect mode:</strong> Click a source box, then click a target box in the next column to draw a line. Click a line to delete it.';
-  }
-
-  // toggle cursor classes
-  document.querySelectorAll('.box').forEach(b => {
-    b.classList.toggle('connect-mode', m === 'connect');
-  });
+  hint.innerHTML = m === 'edit'
+    ? '<strong>Edit mode:</strong> Click any box to edit its text. Hover to delete.'
+    : '<strong>Draw mode:</strong> Click a source box, then a box in the next column. Click a line to delete it.';
+  document.querySelectorAll('#kdd-view .box').forEach(b => b.classList.toggle('connect-mode', m === 'connect'));
   document.getElementById('diagram').classList.toggle('edit-mode', m === 'edit');
 }
-
-/* ═══════════════════════════════════════════
-   BOX CLICK HANDLER
-═══════════════════════════════════════════ */
-function onBoxClick(id, col) {
-  if (mode === 'edit') {
-    startEditBox(id);
-    return;
-  }
-  // CONNECT MODE
-  if (!connectFrom) {
-    connectFrom = {id, col};
-    document.getElementById(id).classList.add('selected-from');
-  } else {
-    const from = connectFrom;
-    connectFrom = null;
-    clearHighlights();
-
-    if (from.id === id) return; // same box
-
-    // check adjacency
-    const fromColIdx = COL_ORDER.indexOf(from.col);
-    const toColIdx = COL_ORDER.indexOf(col);
-    if (Math.abs(fromColIdx - toColIdx) !== 1) {
-      alert('You can only connect boxes in adjacent columns.');
-      return;
-    }
-
-    // ensure from is left of to
-    let f = from.id, t = id;
-    if (fromColIdx > toColIdx) { [f, t] = [t, f]; }
-
-    // check duplicate
-    const exists = connections.some(c => c.from === f && c.to === t);
-    if (!exists) {
-      connections.push({from: f, to: t});
-      renderConnections();
-    }
+function onConnectClick(id, col){
+  if (!connectFrom) { connectFrom = {id, col}; document.getElementById(id).classList.add('selected-from'); return; }
+  const from = connectFrom; connectFrom = null; clearHighlights();
+  if (from.id === id) return;
+  const fi = COL_ORDER.indexOf(from.col), ti = COL_ORDER.indexOf(col);
+  if (Math.abs(fi - ti) !== 1) { toast('Connect boxes in adjacent columns only'); return; }
+  let f = from.id, t = id; if (fi > ti) [f,t] = [t,f];
+  if (!state.connections.some(c => c.from === f && c.to === t)) {
+    state.connections.push({ from: f, to: t, kind: 'manual' });
+    renderConnections(); persist();
   }
 }
+function clearHighlights(){ document.querySelectorAll('.selected-from').forEach(el => el.classList.remove('selected-from')); }
 
-function clearHighlights() {
-  document.querySelectorAll('.selected-from, .selected-to').forEach(el => {
-    el.classList.remove('selected-from', 'selected-to');
-  });
+function getOffsetRelativeTo(el, ancestor){
+  let top=0,left=0,cur=el;
+  while (cur && cur !== ancestor){ top+=cur.offsetTop; left+=cur.offsetLeft; cur=cur.offsetParent; }
+  return {top,left};
 }
-
-/* ═══════════════════════════════════════════
-   CONNECTIONS
-═══════════════════════════════════════════ */
-function getOffsetRelativeTo(el, ancestor) {
-  let top = 0, left = 0;
-  let cur = el;
-  while (cur && cur !== ancestor) {
-    top += cur.offsetTop;
-    left += cur.offsetLeft;
-    cur = cur.offsetParent;
-  }
-  return { top, left };
-}
-
-function renderConnections() {
+function renderConnections(){
   const svg = document.getElementById('conn-svg');
   svg.innerHTML = '';
   const diagram = document.getElementById('diagram');
-  const W = diagram.scrollWidth;
-  const H = diagram.scrollHeight;
-
-  svg.style.width = W + 'px';
-  svg.style.height = H + 'px';
+  const W = diagram.scrollWidth, H = diagram.scrollHeight;
+  svg.style.width = W+'px'; svg.style.height = H+'px';
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-
-  connections.forEach((conn, idx) => {
-    const fromEl = document.getElementById(conn.from);
-    const toEl = document.getElementById(conn.to);
-    if (!fromEl || !toEl) return;
-
-    const fromPos = getOffsetRelativeTo(fromEl, diagram);
-    const toPos = getOffsetRelativeTo(toEl, diagram);
-
-    const x1 = fromPos.left + fromEl.offsetWidth;
-    const y1 = fromPos.top + fromEl.offsetHeight / 2;
-    const x2 = toPos.left;
-    const y2 = toPos.top + toEl.offsetHeight / 2;
-
-    const cx = (x1 + x2) / 2;
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  state.connections.forEach((conn, idx) => {
+    const a = document.getElementById(conn.from), b = document.getElementById(conn.to);
+    if (!a || !b || !a.offsetWidth || !b.offsetWidth) return;   // skip hidden/zero-size
+    const pa = getOffsetRelativeTo(a, diagram), pb = getOffsetRelativeTo(b, diagram);
+    const x1 = pa.left + a.offsetWidth, y1 = pa.top + a.offsetHeight/2;
+    const x2 = pb.left, y2 = pb.top + b.offsetHeight/2;
+    const cx = (x1+x2)/2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d', `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`);
-    path.setAttribute('class', 'conn-line');
-    path.setAttribute('data-idx', idx);
-    path.style.pointerEvents = 'stroke';
-    path.onclick = () => deleteConnection(idx);
+    path.setAttribute('class','conn-line');
+    path.onclick = () => deleteConnection(conn);
     svg.appendChild(path);
   });
 }
-
-function deleteConnection(idx) {
-  connections.splice(idx, 1);
-  renderConnections();
+function deleteConnection(conn){
+  if (conn.kind === 'default') state.removedDefaults.push(conn.from + '|' + conn.to);
+  const i = state.connections.indexOf(conn);
+  if (i > -1) state.connections.splice(i, 1);
+  renderConnections(); persist();
+}
+function clearAllConnections(){
+  // remember deleted defaults so they don't immediately re-draw
+  state.connections.filter(c => c.kind === 'default').forEach(c => state.removedDefaults.push(c.from + '|' + c.to));
+  state.connections = [];
+  renderConnections(); persist();
 }
 
-function clearAllConnections() {
-  connections = [];
-  renderConnections();
+/* ═══════════════════════════════════════════
+   RESYNC  (fishbone → KDD, keep interventions/metrics/manual lines)
+═══════════════════════════════════════════ */
+function askResync(){
+  openConfirm('Resync from fishbone?',
+    'The fishbone is the source of truth. This rebuilds the Key Drivers, 2° Drivers and their default lines from it — any you hid here will come back, and default lines reset. Your Interventions, Metrics and hand-drawn lines are kept.',
+    doResync);
+}
+function doResync(){
+  state.categories.forEach(c => c.hiddenInKdd = false);
+  state.items.forEach(i => i.hiddenInKdd = false);
+  state.connections = state.connections.filter(c => c.kind !== 'default');
+  state.removedDefaults = [];   // restore every default line
+  seedDefaultConnections();
+  buildKdd(); persist();
+  toast('Resynced from fishbone');
 }
 
 /* ═══════════════════════════════════════════
    FONT SIZE
 ═══════════════════════════════════════════ */
-const colFontSizes = { aim: 13, kd: 14, sd: 13, int: 13, met: 13 };
-
-function adjustFontSize(col, delta) {
-  const current = colFontSizes[col];
-  const next = Math.min(24, Math.max(8, current + delta));
-  colFontSizes[col] = next;
-  const disp = document.getElementById('fs-' + col);
-  if (disp) disp.textContent = next;
-
-  if (col === 'aim') {
-    const t = document.getElementById('aim-text');
-    if (t) t.style.fontSize = next + 'px';
+// fishbone view reuses the aim/kd/sd controls but drives its own head/main/sub sizes
+const FISH_FONT_KEY = { aim:'head', kd:'main', sd:'sub' };
+function adjustFontSize(col, delta){
+  if (state.view === 'fishbone' && FISH_FONT_KEY[col]) {
+    const k = FISH_FONT_KEY[col];
+    state.fishFont[k] = Math.min(40, Math.max(8, state.fishFont[k] + delta));
   } else {
-    const body = document.getElementById(col + '-body');
-    if (body) body.querySelectorAll('.box-text').forEach(el => { el.style.fontSize = next + 'px'; });
+    state.fontSizes[col] = Math.min(28, Math.max(8, state.fontSizes[col] + delta));
   }
+  renderFontValues();
+  applyFontSizesLive(); persist();
+}
+function renderFontValues(){
+  const fish = state.view === 'fishbone';
+  ['aim','kd','sd','int','met'].forEach(c => {
+    const d = document.getElementById('fs-'+c); if (!d) return;
+    d.textContent = (fish && FISH_FONT_KEY[c]) ? state.fishFont[FISH_FONT_KEY[c]] : state.fontSizes[c];
+  });
+}
+function applyFontSizesLive(){
+  if (state.view === 'fishbone') buildFishbone(); else buildKdd();
 }
 
 /* ═══════════════════════════════════════════
-   CLEAR TEXT
+   CLEAR TEXT (KDD columns)
 ═══════════════════════════════════════════ */
-function clearColText(col) {
-  if (col === 'aim') {
-    document.getElementById('aim-text').textContent = '';
-  } else {
-    const body = document.getElementById(col + '-body');
-    if (body) body.querySelectorAll('.box-text').forEach(el => { el.textContent = ''; });
-  }
+function clearColText(col){
+  if (col === 'aim') { state.aimText = ''; }
+  else if (col === 'kd') state.categories.filter(c=>!c.hiddenInKdd).forEach(c => c.text = '');
+  else if (col === 'sd') state.items.filter(i=>!i.hiddenInKdd).forEach(i => i.text = '');
+  else if (col === 'int') state.interventions.forEach(v => v.text = '');
+  else if (col === 'met') state.metrics.forEach(m => m.text = '');
+  buildKdd(); persist();
+}
+function editAim(){
+  if (mode !== 'edit') return;
+  const t = document.getElementById('aim-text');
+  startEdit(t, txt => state.aimText = txt);
 }
 
 /* ═══════════════════════════════════════════
-   EXPORT
+   CONFIRM + TOAST
 ═══════════════════════════════════════════ */
-function exportPNG() {
-  updatePxPreview();
-  document.getElementById('export-notice').classList.add('show');
+function openConfirm(title, body, onOk){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-body').textContent = body;
+  const ok = document.getElementById('confirm-ok');
+  ok.onclick = () => { closeConfirm(); onOk(); };
+  document.getElementById('confirm-modal').classList.add('show');
 }
-function closeExport() {
-  document.getElementById('export-notice').classList.remove('show');
-  document.getElementById('exp-status').textContent = '';
+function closeConfirm(){ document.getElementById('confirm-modal').classList.remove('show'); }
+
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-function selectPreset(btn, w, h) {
-  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (w > 0) {
-    document.getElementById('exp-w').value = w;
-    document.getElementById('exp-h').value = h;
-  }
-  updatePxPreview();
+/* ═══════════════════════════════════════════
+   EXPORT PNG
+═══════════════════════════════════════════ */
+function exportPNG(){ updatePx(); document.getElementById('export-notice').classList.add('show'); }
+function closeExport(){ document.getElementById('export-notice').classList.remove('show'); document.getElementById('exp-status').textContent=''; }
+function selectPreset(btn,w,h){
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  if (w>0){ document.getElementById('exp-w').value=w; document.getElementById('exp-h').value=h; } updatePx();
 }
-
-function updatePxPreview() {
-  const w = parseFloat(document.getElementById('exp-w').value) || 0;
-  const h = parseFloat(document.getElementById('exp-h').value) || 0;
-  const dpi = parseInt(document.getElementById('exp-dpi').value) || 150;
-  const pw = Math.round(w * dpi);
-  const ph = Math.round(h * dpi);
-  document.getElementById('exp-px-preview').textContent = `Output: ${pw} × ${ph} px`;
+function updatePx(){
+  const w=parseFloat(document.getElementById('exp-w').value)||0, h=parseFloat(document.getElementById('exp-h').value)||0, dpi=parseInt(document.getElementById('exp-dpi').value)||150;
+  document.getElementById('exp-px-preview').textContent = `Output: ${Math.round(w*dpi)} × ${Math.round(h*dpi)} px`;
 }
 document.addEventListener('DOMContentLoaded', () => {
-  ['exp-w','exp-h','exp-dpi'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => { updatePxPreview(); document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active')); document.getElementById('preset-custom').classList.add('active'); });
-  });
+  ['exp-w','exp-h','exp-dpi'].forEach(id => { const el=document.getElementById(id); if(el) el.addEventListener('input', ()=>{ updatePx(); document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active')); document.getElementById('preset-custom').classList.add('active'); }); });
 });
 
-async function doExportPNG() {
-  const w = parseFloat(document.getElementById('exp-w').value);
-  const h = parseFloat(document.getElementById('exp-h').value);
-  const dpi = parseInt(document.getElementById('exp-dpi').value) || 150;
-  if (!w || !h) { alert('Please enter valid dimensions.'); return; }
+/* shared canvas helpers */
+function roundRect(cx,x,y,w,h,r,fill,stroke,sw){
+  cx.beginPath(); cx.moveTo(x+r,y); cx.lineTo(x+w-r,y); cx.arcTo(x+w,y,x+w,y+r,r);
+  cx.lineTo(x+w,y+h-r); cx.arcTo(x+w,y+h,x+w-r,y+h,r); cx.lineTo(x+r,y+h);
+  cx.arcTo(x,y+h,x,y+h-r,r); cx.lineTo(x,y+r); cx.arcTo(x,y,x+r,y,r); cx.closePath();
+  if (fill){ cx.fillStyle=fill; cx.fill(); } if (stroke){ cx.strokeStyle=stroke; cx.lineWidth=sw||2; cx.stroke(); }
+}
+function cleanText(el){ return (el.innerText||el.textContent||'').replace(/[\r\n]+/g,' ').replace(/\s+/g,' ').trim(); }
+function wrapText(cx,text,x,y,maxW,lineH){
+  const words=text.replace(/\s+/g,' ').trim().split(' '); let line='',lines=[];
+  for (const w of words){ if(!w) continue; const test=line?line+' '+w:w; if(cx.measureText(test).width>maxW && line){ lines.push(line); line=w; } else line=test; }
+  if (line) lines.push(line);
+  let sy = y - (lines.length*lineH)/2 + lineH/2;
+  for (const l of lines){ cx.fillText(l,x,sy); sy+=lineH; }
+}
 
-  const pxW = Math.round(w * dpi);
-  const pxH = Math.round(h * dpi);
-
-  const status = document.getElementById('exp-status');
-  status.textContent = 'Rendering…';
-
-  // Small delay so status text renders before we block
-  await new Promise(r => setTimeout(r, 50));
-
+async function doExport(){
+  const w=parseFloat(document.getElementById('exp-w').value), h=parseFloat(document.getElementById('exp-h').value), dpi=parseInt(document.getElementById('exp-dpi').value)||150;
+  if (!w||!h){ toast('Enter valid dimensions'); return; }
+  const pxW=Math.round(w*dpi), pxH=Math.round(h*dpi);
+  const status=document.getElementById('exp-status'); status.textContent='Rendering…';
+  await new Promise(r=>setTimeout(r,40));
   try {
-    const canvas = document.createElement('canvas');
-    canvas.width = pxW;
-    canvas.height = pxH;
-    const ctx = canvas.getContext('2d');
+    const canvas=document.createElement('canvas'); canvas.width=pxW; canvas.height=pxH;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,pxW,pxH);
+    if (state.view==='fishbone') drawFishbone(ctx,pxW,pxH);
+    else drawKdd(ctx,pxW,pxH);
+    canvas.toBlob(blob=>{
+      if(!blob){ status.textContent='❌ Export failed.'; return; }
+      const url=URL.createObjectURL(blob); const a=document.createElement('a');
+      a.download=(state.view==='fishbone'?'fishbone':'key-driver-diagram')+'.png'; a.href=url;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      status.textContent='✅ Download started!';
+    },'image/png');
+  } catch(e){ status.textContent='❌ Export failed: '+e.message; console.error(e); }
+}
 
-    // --- measure diagram ---
-    const diagram = document.getElementById('diagram');
-    const srcW = diagram.scrollWidth;
-    const srcH = diagram.scrollHeight;
-    const scale = Math.min(pxW / srcW, pxH / srcH);
-    const drawW = srcW * scale;
-    const drawH = srcH * scale;
-    const offX = (pxW - drawW) / 2;
-    const offY = (pxH - drawH) / 2;
+function drawFishbone(ctx,pxW,pxH){
+  buildFishbone(); // make sure geometry fresh
+  const L = fishLayout;
+  const scale = Math.min(pxW/L.canvasW, pxH/L.canvasH);
+  const offX=(pxW-L.canvasW*scale)/2, offY=(pxH-L.canvasH*scale)/2;
+  ctx.save(); ctx.translate(offX,offY); ctx.scale(scale,scale);
+  const FONT='sans-serif';
 
-    // Background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, pxW, pxH);
+  // spine
+  ctx.strokeStyle='#111827'; ctx.lineWidth=5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(L.spineStartX,L.centerY); ctx.lineTo(L.headX,L.centerY); ctx.stroke();
+  // arrow
+  ctx.fillStyle='#111827'; ctx.beginPath();
+  ctx.moveTo(L.arrow.x-16,L.centerY-11); ctx.lineTo(L.arrow.x+2,L.centerY); ctx.lineTo(L.arrow.x-16,L.centerY+11); ctx.closePath(); ctx.fill();
+  // bones
+  L.lines.forEach(l=>{ ctx.strokeStyle=l.color; ctx.lineWidth=l.width; ctx.beginPath(); ctx.moveTo(l.x1,l.y1); ctx.lineTo(l.x2,l.y2); ctx.stroke(); });
 
-    ctx.save();
-    ctx.translate(offX, offY);
-    ctx.scale(scale, scale);
+  const canvas=document.getElementById('fish-canvas');
+  canvas.querySelectorAll('.fish-box').forEach(el=>{
+    const x=parseFloat(el.style.left), y=parseFloat(el.style.top), bw=el.offsetWidth, bh=el.offsetHeight;
+    const isCat=el.classList.contains('fish-cat'), isHead=el.classList.contains('fish-head');
+    let bg='#ffffff', border='#d4d8e0', bwid=3;
+    if (isCat){ bg=el.style.background; border=bg; bwid=0; }
+    else if (isHead){ border='#111827'; bwid=3; }
+    else { border=el.style.borderColor||'#d4d8e0'; bwid=3; }
+    roundRect(ctx,x,y,bw,bh,8,bg,bwid?border:null,bwid);
+    const tEl=el.querySelector('.box-text'); const txt=tEl?cleanText(tEl):''; if(!txt) return;
+    const fsz=parseFloat(tEl.style.fontSize)||13;
+    ctx.fillStyle=isCat?(el.style.color||'#ffffff'):'#1a1d23';
+    ctx.font=`${isCat||isHead?'700':'500'} ${fsz}px ${FONT}`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    wrapText(ctx,txt,x+bw/2,y+bh/2,bw-22,fsz*1.4);
+  });
+  ctx.restore();
+}
 
-    const RADIUS = 8;
-    const PAD = 10;
-    const FONT = 'sans-serif';
-    const TOP_PADDING = 40; // padding above diagram content in export
+function drawKdd(ctx,pxW,pxH){
+  const diagram=document.getElementById('diagram');
+  const srcW=diagram.scrollWidth, srcH=diagram.scrollHeight;
+  const TOP=44;
+  const totalH=srcH+TOP;
+  const scale=Math.min(pxW/srcW, pxH/totalH);
+  const offX=(pxW-srcW*scale)/2, offY=(pxH-totalH*scale)/2;
+  ctx.save(); ctx.translate(offX,offY); ctx.scale(scale,scale);
+  const FONT='sans-serif';
 
-    function roundRect(cx, x, y, w, h, r, fill, stroke, strokeW) {
-      cx.beginPath();
-      cx.moveTo(x + r, y);
-      cx.lineTo(x + w - r, y);
-      cx.arcTo(x + w, y, x + w, y + r, r);
-      cx.lineTo(x + w, y + h - r);
-      cx.arcTo(x + w, y + h, x + w - r, y + h, r);
-      cx.lineTo(x + r, y + h);
-      cx.arcTo(x, y + h, x, y + h - r, r);
-      cx.lineTo(x, y + r);
-      cx.arcTo(x, y, x + r, y, r);
-      cx.closePath();
-      if (fill) { cx.fillStyle = fill; cx.fill(); }
-      if (stroke) { cx.strokeStyle = stroke; cx.lineWidth = strokeW || 2; cx.stroke(); }
-    }
-
-    function getCleanText(el) {
-      return (el.innerText || el.textContent || '')
-        .replace(/[\r\n]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    }
-
-    function wrapText(cx, text, x, y, maxW, lineH) {
-      const normalized = text.replace(/\s+/g, ' ').trim();
-      const words = normalized.split(' ');
-      let line = '';
-      let lines = [];
-      for (let word of words) {
-        if (!word) continue;
-        const test = line ? line + ' ' + word : word;
-        if (cx.measureText(test).width > maxW && line) {
-          lines.push(line);
-          line = word;
-        } else {
-          line = test;
-        }
-      }
-      if (line) lines.push(line);
-      const totalH = lines.length * lineH;
-      let startY = y - totalH / 2 + lineH / 2;
-      for (let l of lines) {
-        cx.fillText(l, x, startY);
-        startY += lineH;
-      }
-    }
-
-    function drawBox(el, isKD, isSD, col) {
-      const pos = getOffsetRelativeTo(el, diagram);
-      const x = pos.left;
-      const y = pos.top + TOP_PADDING;
-      const bw = el.offsetWidth;
-      const bh = el.offsetHeight;
-
-      const bg = isKD ? (el.style.background || '#3b82f6') : '#ffffff';
-      const borderColor = el.style.borderColor || '#d4d8e0';
-      const borderW = isSD ? 3 : 2;
-
-      // shadow
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.08)';
-      ctx.shadowBlur = 8 * scale;
-      ctx.shadowOffsetY = 2 * scale;
-      roundRect(ctx, x, y, bw, bh, RADIUS, bg, null, 0);
-      ctx.restore();
-
-      roundRect(ctx, x, y, bw, bh, RADIUS, bg, borderColor, borderW);
-
-      // Text — use live font size from colFontSizes
-      const textEl = el.querySelector('.box-text');
-      const rawText = textEl ? getCleanText(textEl) : '';
-      if (!rawText) return;
-
-      const textColor = isKD ? (el.style.color || '#ffffff') : '#1a1d23';
-      ctx.fillStyle = textColor;
-      const fontSize = colFontSizes[col] || (isKD ? 14 : 13);
-      const fontWeight = isKD ? '600' : '500';
-      ctx.font = `${fontWeight} ${fontSize}px ${FONT}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      wrapText(ctx, rawText, x + bw / 2, y + bh / 2, bw - PAD * 2, fontSize * 1.4);
-    }
-
-    // Draw aim box - plain white box like other columns
-    const aimBox = document.getElementById('aim-box');
-    if (aimBox) {
-      const pos = getOffsetRelativeTo(aimBox, diagram);
-      const bw = aimBox.offsetWidth;
-      const bh = aimBox.offsetHeight;
-      const ax = pos.left;
-      const ay = pos.top + TOP_PADDING;
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.08)';
-      ctx.shadowBlur = 8 * scale;
-      ctx.shadowOffsetY = 2 * scale;
-      roundRect(ctx, ax, ay, bw, bh, RADIUS, '#ffffff', null, 0);
-      ctx.restore();
-      roundRect(ctx, ax, ay, bw, bh, RADIUS, '#ffffff', '#1a1d23', 2);
-
-      const aimText = document.getElementById('aim-text');
-      const aimStr = aimText ? getCleanText(aimText) : '';
-      if (aimStr) {
-        const aimFontSize = colFontSizes['aim'] || 13;
-        ctx.fillStyle = '#1a1d23';
-        ctx.font = `500 ${aimFontSize}px ${FONT}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        wrapText(ctx, aimStr, ax + bw / 2, ay + bh / 2, bw - PAD * 2, aimFontSize * 1.5);
-      }
-    }
-
-    // Draw column headers (min 18px, above boxes with top padding)
-    const colHeaderDefs = [
-      {colWrap: document.querySelector('.col-aim'), label: 'Aim Statement'},
-      {colWrap: document.getElementById('col-kd'), label: 'Key Drivers'},
-      {colWrap: document.getElementById('col-sd'), label: '2° Drivers'},
-      {colWrap: document.getElementById('col-int'), label: 'Interventions'},
-      {colWrap: document.getElementById('col-met'), label: 'Metrics'},
-    ];
-    const headerFontSize = 18;
-    ctx.fillStyle = '#6b7280';
-    ctx.font = `700 ${headerFontSize}px ${FONT}`;
-    ctx.textAlign = 'center';
-    colHeaderDefs.forEach(({colWrap, label}) => {
-      if (!colWrap) return;
-      const wrapPos = getOffsetRelativeTo(colWrap, diagram);
-      const colCenterX = wrapPos.left + colWrap.offsetWidth / 2;
-      ctx.fillText(label.toUpperCase(), colCenterX, TOP_PADDING / 2);
-    });
-
-    // Draw all KD boxes
-    document.querySelectorAll('#kd-body .box').forEach(el => drawBox(el, true, false, 'kd'));
-    // Draw all SD boxes
-    document.querySelectorAll('#sd-body .box').forEach(el => drawBox(el, false, true, 'sd'));
-    // Draw all INT boxes
-    document.querySelectorAll('#int-body .box').forEach(el => drawBox(el, false, false, 'int'));
-    // Draw all MET boxes
-    document.querySelectorAll('#met-body .box').forEach(el => drawBox(el, false, false, 'met'));
-
-    // Draw connections — offset Y by TOP_PADDING
-    const paths = document.querySelectorAll('#conn-svg path');
-    ctx.strokeStyle = '#374151';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    paths.forEach(path => {
-      const d = path.getAttribute('d');
-      if (!d) return;
-      const nums = d.replace(/[MCL]/g, ' ').trim().split(/[\s,]+/).map(Number);
-      if (nums.length < 8) return;
-      ctx.beginPath();
-      ctx.moveTo(nums[0], nums[1] + TOP_PADDING);
-      ctx.bezierCurveTo(nums[2], nums[3] + TOP_PADDING, nums[4], nums[5] + TOP_PADDING, nums[6], nums[7] + TOP_PADDING);
-      ctx.stroke();
-    });
-
-    ctx.restore();
-
-    // Trigger download
-    canvas.toBlob(blob => {
-      if (!blob) { status.textContent = '❌ Export failed.'; return; }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = 'key-driver-diagram.png';
-      link.href = url;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      status.textContent = '✅ Download started!';
-    }, 'image/png');
-
-  } catch(e) {
-    status.textContent = '❌ Export failed: ' + e.message;
-    console.error(e);
+  function drawBox(el,isKD,isSD,col){
+    const pos=getOffsetRelativeTo(el,diagram); const x=pos.left, y=pos.top+TOP, bw=el.offsetWidth, bh=el.offsetHeight;
+    const bg=isKD?(el.style.background||'#3b82f6'):'#ffffff';
+    const border=el.style.borderColor||'#d4d8e0'; const bwid=isSD?3:2;
+    roundRect(ctx,x,y,bw,bh,8,bg,border,bwid);
+    const tEl=el.querySelector('.box-text'); const txt=tEl?cleanText(tEl):''; if(!txt) return;
+    const fsz=state.fontSizes[col]||13;
+    ctx.fillStyle=isKD?(el.style.color||'#ffffff'):'#1a1d23';
+    ctx.font=`${isKD?'600':'500'} ${fsz}px ${FONT}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    wrapText(ctx,txt,x+bw/2,y+bh/2,bw-20,fsz*1.4);
   }
+  // aim
+  const aimBox=document.getElementById('aim-box');
+  if (aimBox){ const p=getOffsetRelativeTo(aimBox,diagram); roundRect(ctx,p.left,p.top+TOP,aimBox.offsetWidth,aimBox.offsetHeight,8,'#ffffff','#111827',2);
+    const at=cleanText(document.getElementById('aim-text')); if(at){ const fsz=state.fontSizes.aim; ctx.fillStyle='#1a1d23'; ctx.font=`500 ${fsz}px ${FONT}`; ctx.textAlign='center'; ctx.textBaseline='middle'; wrapText(ctx,at,p.left+aimBox.offsetWidth/2,p.top+TOP+aimBox.offsetHeight/2,aimBox.offsetWidth-20,fsz*1.5);} }
+  // headers
+  const defs=[['.col-aim','Aim Statement'],['#col-kd','Key Drivers'],['#col-sd','2° Drivers'],['#col-int','Interventions'],['#col-met','Metrics']];
+  ctx.fillStyle='#6b7280'; ctx.font=`700 18px ${FONT}`; ctx.textAlign='center';
+  defs.forEach(([sel,label])=>{ const cw=diagram.querySelector(sel); if(!cw) return; const p=getOffsetRelativeTo(cw,diagram); ctx.fillText(label.toUpperCase(), p.left+cw.offsetWidth/2, TOP/2); });
+  // boxes
+  document.querySelectorAll('#kd-body .box').forEach(el=>drawBox(el,true,false,'kd'));
+  document.querySelectorAll('#sd-body .box').forEach(el=>drawBox(el,false,true,'sd'));
+  document.querySelectorAll('#int-body .box').forEach(el=>drawBox(el,false,false,'int'));
+  document.querySelectorAll('#met-body .box').forEach(el=>drawBox(el,false,false,'met'));
+  // connections
+  ctx.strokeStyle='#374151'; ctx.lineWidth=2; ctx.setLineDash([]);
+  document.querySelectorAll('#conn-svg path').forEach(path=>{
+    const d=path.getAttribute('d'); if(!d) return;
+    const n=d.replace(/[MCL]/g,' ').trim().split(/[\s,]+/).map(Number); if(n.length<8) return;
+    ctx.beginPath(); ctx.moveTo(n[0],n[1]+TOP); ctx.bezierCurveTo(n[2],n[3]+TOP,n[4],n[5]+TOP,n[6],n[7]+TOP); ctx.stroke();
+  });
+  ctx.restore();
 }
 
-/* ═══════════════════════════════════════════
-   RE-RENDER ON RESIZE / SCROLL
-═══════════════════════════════════════════ */
-window.addEventListener('resize', () => setTimeout(renderConnections, 50));
-document.getElementById('diagram-wrap').addEventListener('scroll', renderConnections);
+/* re-render connections / fishbone on resize */
+window.addEventListener('resize', () => {
+  if (state.view === 'kdd') setTimeout(renderConnections, 50);
+  else setTimeout(buildFishbone, 50);
+});
+document.getElementById('kdd-view').addEventListener('scroll', () => { if (state.view==='kdd') renderConnections(); });
 
-/* ═══════════════════════════════════════════
-   BOOT
-═══════════════════════════════════════════ */
-init();
-setMode('edit');
+boot();
 </script>
-<style>
-@media print {
-  .topbar, .legend, #export-notice, .add-btn, .delete-btn, .kd-color-strip { display: none !important; }
-  body { background: white; }
-  .diagram-wrap { padding: 10px; overflow: visible; }
-  .connections-svg { pointer-events: none; }
-}
-</style>
 </body>
 </html>
